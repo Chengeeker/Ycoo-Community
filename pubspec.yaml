@@ -1,0 +1,36 @@
+name: yuan_community
+description: 源社区 Material 3 客户端
+publish_to: none
+version: 1.0.0+24
+environment:
+  sdk: ^3.13.0
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  dynamic_color: ^1.9.0
+  dio: ^5.7.0
+  extended_image: ^8.2.1
+  flutter_svg: ^2.3.0
+  qr_flutter: ^4.1.0
+  html: ^0.15.7
+  shared_preferences: ^2.3.2
+  webview_flutter: ^4.10.0
+  webview_flutter_android: ^4.10.0
+  url_launcher: ^6.3.0
+  video_player: ^2.9.2
+  liquid_glass_widgets:
+    path: packages/liquid_glass_widgets
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+flutter:
+  shaders:
+    - shaders/gallery_glass_button.frag
+  uses-material-design: true
+  assets:
+    - assets/default-avatar.svg
+
+

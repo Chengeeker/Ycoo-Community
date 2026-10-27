@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root><![CDATA[<style>.comiis_mh_img35 {overflow:hidden;margin:12px;position:relative}
+.comiis_mh_img35 .swiper-slide h2 {position:absolute;left:0;bottom:0;color:#fff;width:100%;padding:10px 0;box-sizing:border-box;-webkit-box-sizing:border-box;background:-webkit-linear-gradient(top,rgba(0,0,0,0) 0,rgba(0,0,0,.8) 100%);overflow:hidden}
+.comiis_mh_img35 .swiper-slide h2 span.kmtit {display:block;line-height:30px;padding:0 13px;margin:5px 0 0;font-size:18px;font-weight:400;overflow:hidden}
+.comiis_mh_img35 .swiper-slide h2 span.kmuser {display:block;height:20px;line-height:20px;padding:0 12px;font-weight:400}
+.comiis_mh_img35 .swiper-slide h2 span.kmuser img {float:left;width:20px;height:20px;margin-right:6px;border-radius:50%}
+.comiis_mh_img35 .swiper-slide h2 span.kmuser em {padding:0 10px}
+.comiis_mh_img35_roll {position:absolute;right:12px;bottom:14px;height:16px;width:100%;text-align:right;z-index:9;transform:translate3d(0,0,0);overflow:hidden}
+.comiis_mh_img35_roll .swiper-pagination-bullet {display:inline-block;width:4px;height:4px;margin:0 2px;background-color:rgba(255, 255, 255, 1);border-radius:10px}
+.comiis_mh_img35_roll .swiper-pagination-bullet-active {background-color:#F90;width:12px;}
+.comiis_mh_gonggao {padding:10px 12px;height:22px;line-height:22px;overflow:hidden}
+.comiis_mh_gonggao span.kxtit {float:left;height:18px;line-height:18px;padding:0 3px;margin-top:2px;margin-right:8px;overflow:hidden;border-radius:2px}
+.comiis_mh_gonggao li, .comiis_mh_gonggao li a {display:block;font-size:14px;font-weight:400;height:22px;line-height:22px;overflow:hidden}
+.comiis_mhico {padding-bottom:15px;overflow:hidden;position:relative}
+.comiis_mhico_roll {position:absolute;left:0;bottom:0;margin-bottom:6px;height:18px;width:100%;text-align:center;color:#fff;z-index:9;overflow:hidden}
+.comiis_mhico_roll .swiper-pagination-bullet {display:inline-block;width:4px;height:4px;margin:0 2px;background-color:rgba(0, 0, 0, 0.2);border-radius:6px}
+.comiis_mhico_roll .swiper-pagination-bullet-active {background-color:#f90;width:10px}
+.comiis_mh_hdico5 {width:100%;padding:5px 6px;border-collapse:inherit;box-sizing:border-box;overflow:hidden}
+.comiis_mh_hdico5 li {float:left;text-align:center;width:20%;box-sizing:border-box}
+.comiis_mh_hdico5 li a {display:block;padding:8px 10px 6px;position:relative}
+.comiis_mh_hdico5 li img {width:46px;height:46px;margin-bottom:8px;border-radius:4px}
+.comiis_mh_hdico5 li p {height:14px;line-height:14px}
+.comiis_icotip {position:absolute;top:3px;right:5px;padding:0 5px;height:16px;line-height:16px;color:#fff;font-size:12px;white-space:nowrap;background:-webkit-gradient(linear,left top,right top,from(#ff6600),to(#feb22e));background:-webkit-linear-gradient(left,#ff6600,#feb22e);background:linear-gradient(90deg,#ff6600,#feb22e);border-radius:10px 10px 10px 0;box-shadow:0 1px 2px rgba(233,59,61,.2);-webkit-transform-origin:0 100%;transform-origin:0 100%;-webkit-animation:comiis_new both infinite 5s;animation:comiis_new both infinite 5s}
+@keyframes comiis_new{77%,81%,85%,89%  {transform: rotate(6deg);transform:  rotate(6deg)}79%,83%,87%{transform:  rotate(-6deg);transform:  rotate(-6deg)}75%,91% {transform:  rotate(0);transform:  rotate(0)}}
+@keyframes -webkit-comiis_new{77%,81%,85%,89%  {transform: rotate(6deg);transform:  rotate(6deg)}79%,83%,87%{transform:  rotate(-6deg);transform:  rotate(-6deg)}75%,91% {transform:  rotate(0);transform:  rotate(0)}}
+.comiis_mh_tit04 {overflow:hidden;position:relative;}
+.comiis_mh_tit04 h2 {height:18px;line-height:18px;margin:0 12px;padding-top:12px;font-size:16px;font-weight:400;overflow:hidden;}
+.comiis_mh_tit04 h2.mh_tit_ico em {float:left;width:4px;height:18px;border-radius:3px;margin-right:6px;}
+.comiis_mh_tit04 h2 span {font-size:12px;}
+.comiis_mh_tit04 h2 span.mh_tit {font-size:14px;}
+.comiis_mh_tit04 h2 span.mh_tit span {font-size:14px;padding:0 5px;}
+.comiis_mh_hotbk {width:100%;padding:5px 0;border-collapse:inherit;overflow:hidden;}
+.comiis_mh_hotbk li {float:left;text-align:center;width:25%;box-sizing:border-box;}
+.comiis_mh_hotbk li a {display:block;padding:10px;}
+.comiis_mh_hotbk li img {width:46px;height:46px;margin-bottom:8px;border-radius:3px;}
+.comiis_mh_hotbk li p {height:14px;line-height:14px;font-size:13px;}
+.comiis_mh_list19 {padding:6px 12px;overflow:hidden}
+.comiis_mh_list19 li {overflow:hidden}
+.comiis_mh_list19 li a {display:block;height:36px;line-height:36px;font-size:15px;font-weight:400;overflow:hidden}
+.comiis_mh_list19 li em {float:left;font-size:14px;padding-right:8px;font-weight:400}
+.comiis_mh_list19 li span {float:right;font-size:12px;padding-left:8px}
+.comiis_mh_title09 {overflow:hidden;position:relative}
+.comiis_mh_title09 h2 {height:18px;line-height:18px;margin-left:10px;padding-top:12px;font-size:16px;font-weight:400;overflow:hidden}
+.comiis_mh_title09 h2 i.kmico {float:left;font-size:20px;margin-right:5px}
+.comiis_mh_title09 h2 .kmmore {float:right;font-size:14px}
+.comiis_mh_title09 h2 .kmmore i {float:right;font-size:18px;height:18px;line-height:18px;padding:0 12px}
+.comiis_mh_img26 {padding:5px 6px;overflow:hidden}
+.comiis_mh_img26 li {float:left;width:50%;padding:7px 6px;box-sizing:border-box}
+.comiis_mh_img26 li a {display:block;width:100%;overflow:hidden;position:relative}
+.comiis_mh_img26 li img {float:left;width:44px;height:44px;margin-right:8px}
+.comiis_mh_img26 li .album_tit {display:block;font-size:14px;font-weight:400;height:24px;line-height:24px;overflow:hidden}
+.comiis_mh_img26 li .album_txt {display:block;;font-size:12px;height:20px;line-height:20px;overflow:hidden}
+.comiis_mh_img26 li .album_txt i {float:left;font-size:14px;margin-right:2px}
+.comiis_mh_img26 li a em {position:absolute;left:0;top:0;width:16px;height:16px;line-height:16px;font-size:12px;text-align:center;background:rgba(90,90,90,0.75);border-radius:0 50% 50% 50%}
+</style><div id="comiis_app_block_488" class="bg_f mt10 b_t b_b cl">
+<div class="comiis_mh_img35 comiis_mh_img35_500">
+<ul class="swiper-wrapper">
+    <li class="swiper-slide">
+            <a href="thread-88855-1-1.html" title="">
+<img src="data/attachment/block/8d/8d4a787bc16cbecc49fbdc589d223a04.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/00/00/01_avatar_middle.jpg?ts=1776995151" class="vm">admin</span>
+<span class="kmtit">（广告/推广）两套支付系统，三种到账方式</span>
+<span class="kmuser comiis_tm">245阅读&nbsp;&nbsp;&nbsp;1回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-20729-1-1.html" title="写源过程">
+<img src="data/attachment/block/4d/4d5a5647f7189734a5a88d64eb8e752e.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="写源过程">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/01/35/88_avatar_middle.jpg" class="vm">幕惜</span>
+<span class="kmtit">写源过程</span>
+<span class="kmuser comiis_tm">27894阅读&nbsp;&nbsp;&nbsp;185回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-7251-1-1.html" title="源社区升级&amp;星币获取指南">
+<img src="data/attachment/block/31/31a797fe85dd9ae0cc080bda81c74843.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="源社区升级&amp;星币获取指南">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/01/37/32_avatar_middle.jpg" class="vm">读者202411</span>
+<span class="kmtit">源社区升级&amp;星币获取指南</span>
+<span class="kmuser comiis_tm">111670阅读&nbsp;&nbsp;&nbsp;1076回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-2452-1-1.html" title="个人收藏的老书，赤脚医生手册，军地两用人才之友等 [6本+189m][百度盘]">
+<img src="data/attachment/block/0f/0f4e63e4eb20047a51eae874652d37a3.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="个人收藏的老书，赤脚医生手册，军地两用人才之友等 [6本+189m][百度盘]">
+<h2>
+<span class="kmuser"><img src="./data/avatar/noavatar.svg" class="vm">说好不上床</span>
+<span class="kmtit">个人收藏的老书，赤脚医生手册，军地两用人才之友等 [</span>
+<span class="kmuser comiis_tm">19138阅读&nbsp;&nbsp;&nbsp;315回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-58917-1-1.html" title="前有蛋蛋以身作则，我也试试吧">
+<img src="data/attachment/block/e5/e5b6b1b71064f2a3e741fda232088e49.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="前有蛋蛋以身作则，我也试试吧">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/02/62/45_avatar_middle.jpg" class="vm">凌零</span>
+<span class="kmtit">前有蛋蛋以身作则，我也试试吧</span>
+<span class="kmuser comiis_tm">32336阅读&nbsp;&nbsp;&nbsp;173回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-21898-1-1.html" title="【大更新】源社区订阅源增添三种看帖模式">
+<img src="data/attachment/block/73/73174a960ac6f73c2a7298f614644677.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="【大更新】源社区订阅源增添三种看帖模式">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/00/16/00_avatar_middle.jpg" class="vm">怣疯</span>
+<span class="kmtit">【大更新】源社区订阅源增添三种看帖模式</span>
+<span class="kmuser comiis_tm">72520阅读&nbsp;&nbsp;&nbsp;978回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-46989-1-1.html" title="诛仙〔精美插图〕   作者［萧鼎］格式 EPUB">
+<img src="data/attachment/block/58/58108175de968f744fc637622827bb52.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="诛仙〔精美插图〕   作者［萧鼎］格式 EPUB">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/01/60/31_avatar_middle.jpg" class="vm">威哥神</span>
+<span class="kmtit">诛仙〔精美插图〕   作者［萧鼎］格式 EPUB</span>
+<span class="kmuser comiis_tm">1720阅读&nbsp;&nbsp;&nbsp;30回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-14413-1-1.html" title="阅读主题『百合』">
+<img src="data/attachment/block/b4/b467734bda9a2c01e1297b61e49e960a.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="阅读主题『百合』">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/00/68/69_avatar_middle.jpg" class="vm">墨迹染流年</span>
+<span class="kmtit">阅读主题『百合』</span>
+<span class="kmuser comiis_tm">5255阅读&nbsp;&nbsp;&nbsp;53回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-1742-1-1.html" title="源论坛订阅源(20250204更新)">
+<img src="data/attachment/block/39/396188f502ec6e41954fcb1cae32b621.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="源论坛订阅源(20250204更新)">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/00/26/21_avatar_middle.jpg" class="vm">河鹅和</span>
+<span class="kmtit">源论坛订阅源(20250204更新)</span>
+<span class="kmuser comiis_tm">64218阅读&nbsp;&nbsp;&nbsp;891回复</span>
+</h2>
+</a>
+</li>
+<li class="swiper-slide">
+            <a href="thread-85802-1-1.html" title="AI自动写书源教程-基础版">
+<img src="data/attachment/block/7e/7e1fbfd0fa8631a79a35167776fc990c.jpg" width="100%" class="vm comiis_mh_img35_whb_500" alt="AI自动写书源教程-基础版">
+<h2>
+<span class="kmuser"><img src="./data/avatar/000/02/38/48_avatar_middle.jpg" class="vm">大刀一米</span>
+<span class="kmtit">AI自动写书源教程-基础版</span>
+<span class="kmuser comiis_tm">15494阅读&nbsp;&nbsp;&nbsp;122回复</span>
+</h2>
+</a>
+</li>
+
+</ul>
+<div class="comiis_mh_img35_roll comiis_mh_img35_roll_500"></div>
+</div>
+<script>
+  $('.comiis_mh_img35_whb_500').css('height', ($('.comiis_mh_img35_whb_500').width() * 0.45) + 'px');
+comiis_app_portal_swiper('.comiis_mh_img35_500', {
+slidesPerView : 'auto',
+        pagination: '.comiis_mh_img35_roll_500',
+loop: true,
+autoplay: 5000,
+        autoplayDisableOnInteraction: false,
+onTouchMove: function(swiper){
+Comiis_Touch_on = 0;
+},
+onTouchEnd: function(swiper){
+Comiis_Touch_on = 1;
+},
+});
+</script></div><div id="comiis_app_block_469" class="bg_f b_t b_b cl">
+<div class="comiis_mh_gonggao cl">
+    <span class=kxtit style=background:#FF705E;color:#fff>公告</span>
+<div id="comiis_mh_gonggao_478" style="height:22px;line-height:22px;overflow:hidden;">
+<ul>
+    
+</ul>
+</div>
+</div>
+<script>comiis_app_portal_loop(22, 30, 5000, 'comiis_mh_gonggao_478');</script></div><div id="comiis_app_block_500" class="bg_f b_t b_b cl">
+<div class="comiis_mhico comiis_mhico_778">
+<ul class="swiper-wrapper">
+        <li class="swiper-slide">
+  <div class="comiis_mh_hdico5 cl">
+    <ul>
+      <li>
+        <a href="/k_misign-sign.html">
+          <div class="comiis_icotip">新</div>
+          <img src="source/plugin/comiis_app_portal/image/a01.png" class="vm">
+          <p>每日签到</p>
+        </a>
+      </li>
+      <li>
+        <a href="/plugin.php?id=jnfarm">
+          <img src="source/plugin/comiis_app_portal/image/a02.png" class="vm">
+          <p>开心农场</p>
+        </a>
+      </li>
+      <li>
+        <a href="/home.php?mod=space&do=doing&view=all">
+          <div class="comiis_icotip">热</div>
+          <img src="source/plugin/comiis_app_portal/image/a03.png" class="vm">
+          <p>心情墙</p>
+        </a>
+      </li>
+      <li>
+        <a href="/plugin.php?id=bphp_clouds:index">
+          <img src="source/plugin/comiis_app_portal/image/a04.png" class="vm">
+          <p>云盘</p>
+        </a>
+      </li>
+      <li>
+        <a href="/forum.php?mod=collection&op=all">
+          <img src="source/plugin/comiis_app_portal/image/a05.png" class="vm">
+          <p>淘专辑</p>
+        </a>
+      </li>
+    </ul>
+  </div>
+</li>
+</ul>
+<div class="comiis_mhico_roll comiis_mhico_roll_778"></div>
+</div>
+<script>
+comiis_app_portal_swiper('.comiis_mhico_778', {
+        pagination: '.comiis_mhico_roll_778',
+        autoplay: 5000,
+        autoplayDisableOnInteraction: false,
+onTouchMove: function(swiper){
+Comiis_Touch_on = 0;
+},
+onTouchEnd: function(swiper){
+Comiis_Touch_on = 1;
+},
+});
+</script></div><div id="comiis_app_block_444" class="bg_f mt10 b_t b_b cl">
+<div class="comiis_mh_tit04 cl">
+<h2 class="mh_tit_ico pb12"><span class="mh_tit f_d y"><a href="forum.php?forumlist=1" class="f_d">more..</a></span><em style="background:#FCAD30"></em>热门板块</h2>
+</div></div><div id="comiis_app_block_490" class="bg_f b_t b_b cl">
+<div class="comiis_mh_hotbk cl">
+<ul>
+    <li><a href="forum-2-1.html"><img src="https://ycoo.net/data/attachment/common/c8/common_2_icon.png" class="vm"><p>书源发布</p></a></li>
+<li><a href="forum-39-1.html"><img src="https://ycoo.net/data/attachment/common/d6/common_39_icon.png" class="vm"><p>精品软件</p></a></li>
+<li><a href="forum-40-1.html"><img src="https://ycoo.net/data/attachment/common/d6/common_40_icon.png" class="vm"><p>订阅源区</p></a></li>
+<li><a href="forum-96-1.html"><img src="https://ycoo.net/data/attachment/common/26/common_96_icon.png" class="vm"><p>休闲专区</p></a></li>
+<li><a href="forum-110-1.html"><img src="https://ycoo.net/data/attachment/common/5f/common_110_icon.png" class="vm"><p>游戏专区</p></a></li>
+<li><a href="forum-49-1.html"><img src="https://ycoo.net/data/attachment/common/f4/common_49_icon.png" class="vm"><p>主题专区</p></a></li>
+<li><a href="forum-91-1.html"><img src="https://ycoo.net/data/attachment/common/54/common_91_icon.png" class="vm"><p>开源阅读</p></a></li>
+<li><a href="forum-48-1.html"><img src="https://ycoo.net/data/attachment/common/64/common_48_icon.png" class="vm"><p>语音净化</p></a></li>
+
+</ul>
+</div></div><div id="comiis_app_block_446" class="bg_f mt10 b_t b_b cl">
+<div class="comiis_mh_tit04 cl">
+<h2 class="mh_tit_ico pb12"><span class="mh_tit f_d y"><a href="forum.php?mod=guide&view=hot&index=1" class="f_d">more..</a></span><em style="background:#FCAD30"></em>七日排行榜</h2>
+</div></div><div id="comiis_app_block_452" class="bg_f b_t b_b cl">
+<div class="comiis_mh_list19 cl">
+<ul>        <li><a href="thread-152522-1-1.html" title="八叉书库/修复章节获取不全，重新导入即可"><span class="f_d y">6757人在看</span><em class="f_c">1</em>八叉书库/修复章节获取不全，重新导入即可</a></li>
+    <li><a href="thread-153420-1-1.html" title="🔞八叉小说（修复）"><span class="f_d y">4819人在看</span><em class="f_c">2</em>🔞八叉小说（修复）</a></li>
+    <li><a href="thread-152513-1-1.html" title="月亮小说(瑟瑟)"><span class="f_d y">4417人在看</span><em class="f_c">3</em>月亮小说(瑟瑟)</a></li>
+    <li><a href="thread-153569-1-1.html" title="禁漫天堂🔞(漫画/小说/文库专栏)"><span class="f_d y">3897人在看</span><em class="f_c">4</em>禁漫天堂🔞(漫画/小说/文库专栏)</a></li>
+    <li><a href="thread-154095-1-1.html" title="黄果短剧订阅源"><span class="f_d y">3241人在看</span><em class="f_c">5</em>黄果短剧订阅源</a></li>
+    <li><a href="thread-154205-1-1.html" title="五个盗版站(新加一个篱笆好)"><span class="f_d y">3023人在看</span><em class="f_c">6</em>五个盗版站(新加一个篱笆好)</a></li>
+    <li><a href="thread-154023-1-1.html" title="刺猬书库"><span class="f_d y">2743人在看</span><em class="f_c">7</em>刺猬书库</a></li>
+    <li><a href="thread-155064-1-1.html" title="91Porna（9+9）"><span class="f_d y">2340人在看</span><em class="f_c">8</em>91Porna（9+9）</a></li>
+    <li><a href="thread-154638-1-1.html" title="随便做的一些书源和订阅源"><span class="f_d y">2303人在看</span><em class="f_c">9</em>随便做的一些书源和订阅源</a></li>
+    <li><a href="thread-154012-1-1.html" title="亿软小说"><span class="f_d y">2232人在看</span><em class="f_c">10</em>亿软小说</a></li>
+    <li><a href="thread-154605-1-1.html" title="次元姬（支持全站小说加漫画）"><span class="f_d y">2132人在看</span><em class="f_c">11</em>次元姬（支持全站小说加漫画）</a></li>
+    <li><a href="thread-154557-1-1.html" title="STV：修复章节目录无法获取带锁的问题"><span class="f_d y">1862人在看</span><em class="f_c">12</em>STV：修复章节目录无法获取带锁的问题</a></li>
+    <li><a href="thread-152605-1-1.html" title="爱看吧(补下目录分页)"><span class="f_d y">1518人在看</span><em class="f_c">13</em>爱看吧(补下目录分页)</a></li>
+    <li><a href="thread-153473-1-1.html" title="黄区🔞(小说/视频)"><span class="f_d y">1379人在看</span><em class="f_c">14</em>黄区🔞(小说/视频)</a></li>
+    <li><a href="thread-152780-1-1.html" title="黄果短剧"><span class="f_d y">1303人在看</span><em class="f_c">15</em>黄果短剧</a></li>
+
+</ul>
+</div></div><div id="comiis_app_block_503" class="bg_f mt10 b_t b_b cl">
+<div class="comiis_mh_title09 cl">
+<h2 class="mh_tit_ico pb12"><a href="#" class="kmmore f_d"><i class="comiis_font f_d">&#xe62b</i></a><i class="comiis_font kmico" style="color:#53bcf5">&#xe6df</i>置顶区</h2>
+</div></div><div id="comiis_app_block_502" class="bg_f mb10 b_t b_b cl">
+<div class="comiis_mh_img26 cl">
+<ul>        <li>
+<a href="thread-7251-1-1.html" title="源社区升级&amp;星币获取指南">
+            <em class="f_f" style="background:#FF705E">1</em>
+            <img src=
+    "data/attachment/block/c6/c61db2795f33fe5f6403ba46f30d38b6.jpg" alt="源社区升级&amp;星币获取指南" class="vm comiis_img_whb_780">
+            <span class="album_tit">源社区升级&amp;星币获取指南</span>
+            <span class="album_txt f_c">#教程#</span>
+        </a>
+        </li>
+        <li>
+<a href="thread-44204-1-1.html" title="开放注册规则调整公告">
+            <em class="f_f" style="background:#FFB900">2</em>
+            <img src=
+    "static/image/common/nophoto.gif" alt="开放注册规则调整公告" class="vm comiis_img_whb_780">
+            <span class="album_tit">开放注册规则调整公告</span>
+            <span class="album_txt f_c">#公告#</span>
+        </a>
+        </li>
+        <li>
+<a href="thread-60773-1-1.html" title="源社区云盘直链上线">
+            <em class="f_f" style="background:#A8C500">3</em>
+            <img src=
+    "data/attachment/block/02/021bc774ef1dd8d37d52e2dae8cd9aa5.jpg" alt="源社区云盘直链上线" class="vm comiis_img_whb_780">
+            <span class="album_tit">源社区云盘直链上线</span>
+            <span class="album_txt f_c">#公告#</span>
+        </a>
+        </li>
+        <li>
+<a href="thread-9-1-1.html" title="源社区交流群">
+            <em class="f_f">4</em>
+            <img src=
+    "data/attachment/block/79/794d1fa7532dd645773cee5f2ab2ac12.jpg" alt="源社区交流群" class="vm comiis_img_whb_780">
+            <span class="album_tit">源社区交流群</span>
+            <span class="album_txt f_c">#公告#</span>
+        </a>
+        </li>
+        <li>
+<a href="thread-20632-1-1.html" title="源社区权限组晋升体系说明">
+            <em class="f_f">5</em>
+            <img src=
+    "static/image/common/nophoto.gif" alt="源社区权限组晋升体系说明" class="vm comiis_img_whb_780">
+            <span class="album_tit">源社区权限组晋升体系说明</span>
+            <span class="album_txt f_c">#公告#</span>
+        </a>
+        </li>
+        <li>
+<a href="thread-5102-1-1.html" title="源社区大事记">
+            <em class="f_f">6</em>
+            <img src=
+    "static/image/common/nophoto.gif" alt="源社区大事记" class="vm comiis_img_whb_780">
+            <span class="album_tit">源社区大事记</span>
+            <span class="album_txt f_c">#公告#</span>
+        </a>
+        </li>
+        <li>
+<a href="thread-61051-1-1.html" title="赞助商列表">
+            <em class="f_f">7</em>
+            <img src=
+    "static/image/common/nophoto.gif" alt="赞助商列表" class="vm comiis_img_whb_780">
+            <span class="album_tit">赞助商列表</span>
+            <span class="album_txt f_c">#公告#</span>
+        </a>
+        </li>
+        <li>
+<a href="thread-61630-1-1.html" title="">
+            <em class="f_f">8</em>
+            <img src=
+    "static/image/common/nophoto.gif" alt="" class="vm comiis_img_whb_780">
+            <span class="album_tit">论坛任务奖励更新</span>
+            <span class="album_txt f_c">#公告#</span>
+        </a>
+        </li>
+    
+</ul>
+</div>
+<script>$('.comiis_img_whb_780').css('height', ($('.comiis_img_whb_780').width() * 1) + 'px');</script></div><div id="comiis_loadlistbo_28"><div style="text-align:center;padding:50px;"><img src="./template/comiis_app/comiis/img/comiis_loadimg.gif" height="22" class="comiis_tm"></div></div><script>
+				jQuery.ajax({
+					type:'GET',
+					url: 'plugin.php?id=comiis_app_portal&pid=28&page=1&comiis_list=yes&inajax=1',
+					dataType:'xml',
+				}).success(function(s) {
+					if(typeof(s.lastChild.firstChild.nodeValue) != "undefined"){
+						var datahtml = s.lastChild.firstChild.nodeValue;
+						datahtml = datahtml.replace(/template\/comiis_app\/comiis\/js\/comiis_forumdisplay\.js/g, '/source/plugin/comiis_app_portal/image/comiis_forumdisplay.js');
+						datahtml = datahtml.replace(/\$\(/g, 'jQuery(');
+						datahtml = datahtml.replace(/\$\./g, 'jQuery.');
+						jQuery('#comiis_loadlistbo_28').html(datahtml);
+						evalscript(datahtml);
+					}
+				});
+				</script>]]></root>
