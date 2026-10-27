@@ -185,29 +185,173 @@ Widget forumGalleryFlight(
   BuildContext from,
   BuildContext to,
 ) {
+  final fromHero = from.widget as Hero;
+  final toHero = to.widget as Hero;
   if (direction == HeroFlightDirection.push) {
     final gallery = to.findAncestorStateOfType<_GalleryPageState>();
-    ui.Image? preview;
+    final preview = _GalleryImageGeometry.capture(from)?.image;
+    if (gallery != null && preview != null) {
+      gallery.retainPreview(preview.clone());
+    }
+    return toHero.child;
+  }
+
+  final source = _GalleryImageGeometry.capture(from);
+  final target = _GalleryImageGeometry.capture(to);
+  if (target?.fit == BoxFit.cover && source != null && target != null) {
+    return _GalleryReturnImageMorph(
+      animation: animation,
+      image: source.image.clone(),
+      source: source,
+      target: target,
+    );
+  }
+  return fromHero.child;
+}
+
+class _GalleryImageGeometry {
+  const _GalleryImageGeometry(this.image, this.rect, this.radius, this.fit);
+
+  final ui.Image image;
+  final Rect rect;
+  final BorderRadius radius;
+  final BoxFit? fit;
+
+  static _GalleryImageGeometry? capture(BuildContext context) {
+    final root = context.findRenderObject();
+    if (root is! RenderBox || !root.hasSize) return null;
+    final direction = Directionality.of(context);
+    _GalleryImageGeometry? result;
+    var radius = BorderRadius.zero;
     void visit(RenderObject object) {
-      if (preview != null) return;
-      if (object is RenderImage && object.image != null) {
-        preview = object.image!.clone();
+      if (result != null) return;
+      if (object is RenderClipRRect) {
+        radius = object.borderRadius.resolve(direction);
+      }
+      ui.Image? image;
+      BoxFit? fit;
+      AlignmentGeometry alignment = Alignment.center;
+      Rect? gestureRect;
+      if (object is ExtendedRenderImage) {
+        image = object.image;
+        fit = object.fit;
+        alignment = object.alignment;
+        final gesture = object.gestureDetails;
+        if (gesture?.destinationRect != null && gesture?.layoutRect != null) {
+          gestureRect = gesture!.destinationRect!.shift(
+            -gesture.layoutRect!.topLeft,
+          );
+        }
+      } else if (object is RenderImage) {
+        image = object.image;
+        fit = object.fit;
+        alignment = object.alignment;
+      }
+      if (image != null && object is RenderBox && object.hasSize) {
+        final pixels = Size(image.width.toDouble(), image.height.toDouble());
+        final align = alignment.resolve(direction);
+        final fitted = applyBoxFit(
+          fit ?? BoxFit.scaleDown,
+          pixels,
+          object.size,
+        );
+        final crop = align.inscribe(fitted.source, Offset.zero & pixels);
+        final painted =
+            gestureRect ??
+            align.inscribe(fitted.destination, Offset.zero & object.size);
+        final sx = painted.width / crop.width;
+        final sy = painted.height / crop.height;
+        final full = Rect.fromLTWH(
+          painted.left - crop.left * sx,
+          painted.top - crop.top * sy,
+          pixels.width * sx,
+          pixels.height * sy,
+        );
+        result = _GalleryImageGeometry(
+          image,
+          MatrixUtils.transformRect(object.getTransformTo(root), full),
+          radius,
+          fit,
+        );
+        return;
       }
       object.visitChildren(visit);
     }
 
-    final object = from.findRenderObject();
-    if (object != null) visit(object);
-    if (gallery != null) {
-      gallery.retainPreview(preview);
-    } else {
-      preview?.dispose();
-    }
+    visit(root);
+    return result;
   }
-  return (direction == HeroFlightDirection.push
-          ? to.widget as Hero
-          : from.widget as Hero)
-      .child;
+}
+
+class _GalleryReturnImageMorph extends StatefulWidget {
+  const _GalleryReturnImageMorph({
+    required this.animation,
+    required this.image,
+    required this.source,
+    required this.target,
+  });
+
+  final Animation<double> animation;
+  final ui.Image image;
+  final _GalleryImageGeometry source;
+  final _GalleryImageGeometry target;
+
+  @override
+  State<_GalleryReturnImageMorph> createState() =>
+      _GalleryReturnImageMorphState();
+}
+
+class _GalleryReturnImageMorphState extends State<_GalleryReturnImageMorph> {
+  @override
+  void dispose() {
+    widget.image.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    key: const ValueKey('gallery-return-image-plane'),
+    painter: _GalleryReturnPainter(
+      widget.image,
+      widget.animation,
+      widget.source,
+      widget.target,
+    ),
+    child: const SizedBox.expand(),
+  );
+}
+
+class _GalleryReturnPainter extends CustomPainter {
+  _GalleryReturnPainter(this.image, this.animation, this.source, this.target)
+    : super(repaint: animation);
+
+  final ui.Image image;
+  final Animation<double> animation;
+  final _GalleryImageGeometry source;
+  final _GalleryImageGeometry target;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final t = (1 - animation.value).clamp(0.0, 1.0);
+    final rect = Rect.lerp(source.rect, target.rect, t)!;
+    final radius = BorderRadius.lerp(source.radius, target.radius, t)!;
+    canvas.save();
+    canvas.clipRRect(radius.toRRect(Offset.zero & size));
+    canvas.drawImageRect(
+      image,
+      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+      rect,
+      Paint()..filterQuality = FilterQuality.low,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _GalleryReturnPainter oldDelegate) =>
+      oldDelegate.image != image ||
+      oldDelegate.source != source ||
+      oldDelegate.target != target ||
+      oldDelegate.animation != animation;
 }
 
 class _GalleryPageState extends State<GalleryPage>
@@ -522,6 +666,8 @@ class _GalleryPageState extends State<GalleryPage>
                       final url = widget.images[index];
                       Widget image = ExtendedImage.network(
                         url,
+                        width: double.infinity,
+                        height: double.infinity,
                         key: ValueKey((index, url)),
                         headers: siteImageHeaders(url, cookie: widget.cookie),
                         fit: BoxFit.contain,
@@ -599,17 +745,20 @@ class _GalleryPageState extends State<GalleryPage>
                               LoadState.completed => null,
                             },
                       );
+                      Widget page = SizedBox.expand(
+                        child: Center(child: image),
+                      );
                       if (widget.heroScope case final scope?) {
-                        image = HeroMode(
+                        page = HeroMode(
                           enabled: index == current,
                           child: Hero(
                             tag: forumGalleryHeroTag(scope, index, url),
                             flightShuttleBuilder: forumGalleryFlight,
-                            child: image,
+                            child: page,
                           ),
                         );
                       }
-                      return SizedBox.expand(child: Center(child: image));
+                      return SizedBox.expand(child: page);
                     },
                   ),
                 ),

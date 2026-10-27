@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -99,6 +101,108 @@ void main() {
       );
     }
   }
+
+  testWidgets('Review hero target keeps the full viewport while loading', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(393, 873);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final scope = Object();
+    const url = 'https://example.invalid/hero.png';
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GalleryPage(const [url], 0, cookie: 'test', heroScope: scope),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    final hero = find.byWidgetPredicate(
+      (widget) =>
+          widget is Hero && widget.tag == forumGalleryHeroTag(scope, 0, url),
+    );
+    expect(tester.getRect(hero), const Rect.fromLTWH(0, 0, 393, 873));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('cover thumbnail return uses Review image-plane morph', (
+    tester,
+  ) async {
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder).drawRect(
+      const ui.Rect.fromLTWH(0, 0, 32, 32),
+      ui.Paint()..color = const ui.Color(0xff4488cc),
+    );
+    final image = await recorder.endRecording().toImage(32, 32);
+    addTearDown(image.dispose);
+    final scope = Object();
+    final tag = forumGalleryHeroTag(
+      scope,
+      0,
+      'https://example.invalid/cover.png',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: Hero(
+                  key: const ValueKey('gallery-source-hero'),
+                  tag: tag,
+                  flightShuttleBuilder: forumGalleryFlight,
+                  child: SizedBox(
+                    width: 220,
+                    height: 320,
+                    child: RawImage(image: image, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Hero(
+                  key: const ValueKey('gallery-target-hero'),
+                  tag: tag,
+                  flightShuttleBuilder: forumGalleryFlight,
+                  child: SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: RawImage(image: image, fit: BoxFit.cover),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final from = tester.element(
+      find.byKey(const ValueKey('gallery-source-hero')),
+    );
+    final to = tester.element(
+      find.byKey(const ValueKey('gallery-target-hero')),
+    );
+    final shuttle = forumGalleryFlight(
+      from,
+      const AlwaysStoppedAnimation<double>(1),
+      HeroFlightDirection.pop,
+      from,
+      to,
+    );
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: shuttle)));
+    expect(
+      find.byKey(const ValueKey('gallery-return-image-plane')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets(
     'Review reel continuously drives the image and yields to a new main swipe',

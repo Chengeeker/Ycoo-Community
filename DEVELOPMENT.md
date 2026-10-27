@@ -1,6 +1,6 @@
 # 源社区开发文档
 
-更新：2026-10-28。当前版本 1.0.0+25，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
+更新：2026-10-28。当前版本 1.0.0+26，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
 
 ## 约束与基线
 
@@ -476,3 +476,13 @@
 - 相关 Dart 分析通过；图库与帖子图片入口定向检查 9/9 通过，覆盖首末张选中居中、横竖屏、缩略图小数页实时同步、停止吸附、主图接管及双击/控件切换。测试遇到网络占位加载动画不停止时，使用有界帧推进并断言两个滚动控制器停止，不能只等待整个 Widget 树无动画。
 - 离线正式构建成功；AAPT 确认 ycoo.net.php / versionName 1.0.0 / versionCode 25，仅 arm64-v8a；APK v2 签名证书匹配指定BKS，16 KiB对齐检查通过。APK 35409206 字节，SHA-256 6B99B6FBFB7CB2AC026AF89AF87D9AE029E9EADBDA8F3A278CBC2764BC97EEF8。
 - 源码回退基线为 Git 提交 bf9ad11；根目录仅保留当前 源社区_v1.0.0.apk。尚未安装新包到真机进行实际缩放和拖动验收。
+
+## 1.0.0+26 Review Hero 转场对齐（2026-10-28）
+
+- 用户反馈图库打开与返回的图片在转场结束时跳变。根因是图库 Hero 只包住 ExtendedImage 子项，目标边界会受加载占位或图片本征尺寸影响；Review 则以整屏媒体画布作为 Hero 子树，保持飞行起止边界稳定。
+- 将图库当前页 Hero 改为包裹固定全视口媒体画布，主图持续在该画布内用 contain 居中绘制；加载占位与原图替换不再改变 Hero 的目标尺寸。打开时捕获源图已解码帧作为预览，仍只保留当前一张。
+- 对照 Review `image_gallery_page.dart` 的几何快照：返回到 `BoxFit.cover` 源缩略图时冻结完整图片平面，插值图像画布和圆角裁切，避免 cover 裁切被 Hero 飞行期间重新布局而在终点跳变；contain 源缩略图继续使用 Review 原生 Hero shuttle。
+- 增加全屏 Hero 加载态边界断言和 cover 返回画布分支检查；定向图库与帖子图片入口检查 11/11 通过，目标文件 Dart 分析无错误/警告。分析与测试通过不代表已在真机验收图片加载时序、转场手感或 GPU 绘制。
+- 直接 Gradle 构建时要同步更新被忽略的 `android/local.properties` 中 `flutter.versionCode`；它会覆盖 pubspec 的 versionCode。首次生成包仍报25，版本校验将其拒收、保留旧 APK；将本机值更新到26后重新构建才交付。正式 Flutter 构建脚本选中的临时 X: 映射被 Windows 拒绝，本次用可用的 V: 映射按项目 ARM64 Gradle 流程完成构建。
+- 版本名保持用户指定的 1.0.0，内部 versionCode 26。AAPT 确认包名 ycoo.net.php、minSdk24、targetSdk36、仅 arm64-v8a；APK v2 签名证书与指定BKS匹配，16 KiB zipalign通过。APK `源社区_v1.0.0.apk`，35409206字节，SHA-256 `07C209D8FC14CA4C5A6F9195FCFDE5764266CEFFA806485AE757F67A8E775EAD`；AOT 中确认包含新的返回画布与缩略图代码。根目录仅保留该最新版，旧APK已替换删除。
+- 最终 APK 尚未安装到真机；真实图片下载时序、Hero 过渡观感、缩放手势和 GPU 绘制仍待设备验收。源码提交不包含 APK、本机签名配置或 `android/local.properties`。
