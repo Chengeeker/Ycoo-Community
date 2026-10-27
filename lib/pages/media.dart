@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/gestures.dart';
 
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
@@ -212,15 +213,25 @@ Widget forumGalleryFlight(
 class _GalleryPageState extends State<GalleryPage>
     with SingleTickerProviderStateMixin {
   late final controller = ExtendedPageController(initialPage: widget.initial);
-  final thumbnails = ScrollController();
+  late final thumbnails = PageController(
+    initialPage: widget.initial,
+    viewportFraction: .16,
+  );
   late final zoom = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 180),
+    duration: const Duration(milliseconds: 260),
   );
   late int current = widget.initial;
   bool chrome = true, saving = false, sliding = false;
   VoidCallback? zoomListener;
   ui.Image? openingPreview;
+  bool thumbnailDragging = false, thumbnailSettling = false;
+  int thumbnailEpoch = 0;
+  final pointers = <int>{};
+  int? tapPointer;
+  Offset? tapDown, pendingTap;
+  bool tapMoved = false;
+  Timer? tapTimer;
 
   void retainPreview(ui.Image? image) {
     openingPreview?.dispose();
@@ -235,19 +246,14 @@ class _GalleryPageState extends State<GalleryPage>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && thumbnails.hasClients) {
-        thumbnails.jumpTo(
-          (current * 62.0 - thumbnails.position.viewportDimension / 2 + 31)
-              .clamp(0, thumbnails.position.maxScrollExtent),
-        );
-      }
-    });
+    thumbnails.addListener(syncMainToThumbnail);
   }
 
   @override
   void dispose() {
+    tapTimer?.cancel();
     zoom.dispose();
+    thumbnails.removeListener(syncMainToThumbnail);
     thumbnails.dispose();
     controller.dispose();
     openingPreview?.dispose();
@@ -255,14 +261,179 @@ class _GalleryPageState extends State<GalleryPage>
   }
 
   void select(int index) {
-    if (current == index) return;
+    if (!controller.hasClients || !thumbnails.hasClients) return;
     HapticFeedbackUtil.selection();
-    controller.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
+    thumbnailEpoch++;
+    setState(() => thumbnailDragging = thumbnailSettling = false);
+    thumbnails.jumpToPage(index);
+    controller.jumpToPage(index);
+  }
+
+  void syncMainToThumbnail() {
+    if (!thumbnailDragging ||
+        !thumbnails.hasClients ||
+        !controller.hasClients) {
+      return;
+    }
+    final page = (thumbnails.page ?? current.toDouble()).clamp(
+      0.0,
+      (widget.images.length - 1).toDouble(),
+    );
+    final position = controller.position;
+    final pixels =
+        (position.minScrollExtent + page * position.viewportDimension)
+            .clamp(position.minScrollExtent, position.maxScrollExtent)
+            .toDouble();
+    if ((position.pixels - pixels).abs() > .5) position.jumpTo(pixels);
+  }
+
+  void settleThumbnails() {
+    if (thumbnailSettling || !thumbnails.hasClients || !controller.hasClients) {
+      return;
+    }
+    final target = (thumbnails.page ?? current.toDouble()).round().clamp(
+      0,
+      widget.images.length - 1,
+    );
+    final epoch = ++thumbnailEpoch;
+    setState(() {
+      thumbnailDragging = false;
+      thumbnailSettling = true;
+    });
+    const duration = Duration(milliseconds: 120);
+    unawaited(
+      Future.wait<void>([
+        thumbnails.animateToPage(
+          target,
+          duration: duration,
+          curve: Curves.easeOutCubic,
+        ),
+        controller.animateToPage(
+          target,
+          duration: duration,
+          curve: Curves.easeOutCubic,
+        ),
+      ]).whenComplete(() {
+        if (mounted && epoch == thumbnailEpoch) {
+          setState(() => thumbnailSettling = false);
+        }
+      }),
     );
   }
+
+  bool thumbnailScroll(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    if (notification is ScrollStartNotification &&
+        notification.dragDetails != null) {
+      thumbnailEpoch++;
+      setState(() {
+        thumbnailDragging = true;
+        thumbnailSettling = false;
+      });
+      if (controller.hasClients) {
+        controller.position.jumpTo(controller.position.pixels);
+      }
+    } else if (notification is ScrollEndNotification && thumbnailDragging) {
+      final epoch = thumbnailEpoch;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && epoch == thumbnailEpoch && thumbnailDragging) {
+          settleThumbnails();
+        }
+      });
+    }
+    return false;
+  }
+
+  bool mainScroll(ScrollNotification notification) {
+    if (notification.depth == 0 &&
+        notification is ScrollStartNotification &&
+        notification.dragDetails != null) {
+      thumbnailEpoch++;
+      setState(() => thumbnailDragging = thumbnailSettling = false);
+      if (thumbnails.hasClients &&
+          thumbnails.position.isScrollingNotifier.value) {
+        thumbnails.position.jumpTo(thumbnails.position.pixels);
+      }
+    }
+    return false;
+  }
+
+  void pointerDown(PointerDownEvent event) {
+    if (pointers.isEmpty) {
+      tapPointer = event.pointer;
+      tapDown = event.position;
+      tapMoved = false;
+    } else {
+      tapMoved = true;
+    }
+    pointers.add(event.pointer);
+  }
+
+  void pointerMove(PointerMoveEvent event) {
+    if (tapPointer == event.pointer &&
+        tapDown != null &&
+        (event.position - tapDown!).distance > kTouchSlop) {
+      tapMoved = true;
+    }
+  }
+
+  void pointerUp(PointerUpEvent event) {
+    if (!pointers.remove(event.pointer)) return;
+    if (tapPointer == event.pointer) {
+      final isTap = pointers.isEmpty && !tapMoved;
+      tapPointer = null;
+      tapDown = null;
+      if (isTap) registerTap(event.position);
+    }
+  }
+
+  void pointerCancel(PointerCancelEvent event) {
+    pointers.remove(event.pointer);
+    if (tapPointer == event.pointer || pointers.isEmpty) {
+      tapPointer = null;
+      tapDown = null;
+    }
+  }
+
+  void registerTap(Offset position) {
+    if (tapTimer?.isActive == true &&
+        pendingTap != null &&
+        (position - pendingTap!).distance <= kDoubleTapSlop) {
+      tapTimer!.cancel();
+      tapTimer = null;
+      pendingTap = null;
+      return;
+    }
+    tapTimer?.cancel();
+    if (pendingTap != null) handleTap(pendingTap!);
+    pendingTap = position;
+    tapTimer = Timer(kDoubleTapTimeout, () {
+      final pending = pendingTap;
+      tapTimer = null;
+      pendingTap = null;
+      if (mounted && pending != null) handleTap(pending);
+    });
+  }
+
+  void handleTap(Offset position) {
+    final width = MediaQuery.sizeOf(context).width;
+    HapticFeedbackUtil.selection();
+    if (position.dx >= width / 3 && position.dx < width * 2 / 3) {
+      setState(() => chrome = !chrome);
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Widget chromeLayer(String id, Widget child) => IgnorePointer(
+    key: ValueKey('gallery-$id'),
+    ignoring: !chrome || sliding,
+    child: AnimatedOpacity(
+      opacity: chrome && !sliding ? 1 : 0,
+      duration: const Duration(milliseconds: 140),
+      child: child,
+    ),
+  );
 
   Future<void> save() async {
     if (saving) return;
@@ -307,7 +478,7 @@ class _GalleryPageState extends State<GalleryPage>
                 },
         );
     return ExtendedImageSlidePage(
-      slideAxis: SlideAxis.vertical,
+      slideAxis: SlideAxis.horizontal,
       slideType: SlideType.onlyImage,
       onSlidingPage: (state) {
         if (mounted && sliding != state.isSliding) {
@@ -315,7 +486,7 @@ class _GalleryPageState extends State<GalleryPage>
         }
       },
       slidePageBackgroundHandler: (offset, size) => Colors.black.withValues(
-        alpha: (1 - offset.dy.abs() / (size.height / 2)).clamp(0, 1),
+        alpha: (1 - offset.dx.abs() / (size.width / 2)).clamp(0, 1),
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -323,108 +494,134 @@ class _GalleryPageState extends State<GalleryPage>
           fit: StackFit.expand,
           children: [
             Positioned.fill(
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedbackUtil.selection();
-                  setState(() => chrome = !chrome);
-                },
-                child: ExtendedImageGesturePageView.builder(
-                  controller: controller,
-                  canScrollPage: (details) => (details?.totalScale ?? 1) <= 1,
-                  itemCount: widget.images.length,
-                  onPageChanged: (index) {
-                    HapticFeedbackUtil.selectionTick();
-                    setState(() => current = index);
-                    if (thumbnails.hasClients) {
-                      thumbnails.animateTo(
-                        (index * 62.0 -
-                                thumbnails.position.viewportDimension / 2 +
-                                31)
-                            .clamp(0, thumbnails.position.maxScrollExtent),
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOut,
-                      );
-                    }
-                  },
-                  itemBuilder: (context, index) {
-                    final url = widget.images[index];
-                    Widget image = ExtendedImage.network(
-                      url,
-                      key: ValueKey((index, url)),
-                      headers: siteImageHeaders(url, cookie: widget.cookie),
-                      fit: BoxFit.contain,
-                      mode: ExtendedImageMode.gesture,
-                      enableSlideOutPage: true,
-                      onDoubleTap: (state) {
-                        HapticFeedbackUtil.selection();
-                        final begin = state.gestureDetails?.totalScale ?? 1;
-                        final end = begin > 1 ? 1.0 : 2.5;
-                        zoom.stop();
-                        zoom.reset();
-                        if (zoomListener != null) {
-                          zoom.removeListener(zoomListener!);
-                        }
-                        zoomListener = () {
-                          if (state.mounted) {
-                            state.handleDoubleTap(
-                              scale:
-                                  begin +
-                                  (end - begin) *
-                                      Curves.easeOutCubic.transform(zoom.value),
-                              doubleTapPosition: state.pointerDownPosition,
-                            );
+              child: Listener(
+                onPointerDown: pointerDown,
+                onPointerMove: pointerMove,
+                onPointerUp: pointerUp,
+                onPointerCancel: pointerCancel,
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: mainScroll,
+                  child: ExtendedImageGesturePageView.builder(
+                    controller: controller,
+                    physics: const BouncingScrollPhysics(),
+                    pageSnapping: !thumbnailDragging && !thumbnailSettling,
+                    shouldAccpetHorizontalOrVerticalDrag: (trackers) =>
+                        trackers.length == 1,
+                    canScrollPage: (details) => (details?.totalScale ?? 1) <= 1,
+                    itemCount: widget.images.length,
+                    onPageChanged: (index) {
+                      if (index != current) HapticFeedbackUtil.selectionTick();
+                      setState(() => current = index);
+                      if (!thumbnailDragging &&
+                          !thumbnailSettling &&
+                          thumbnails.hasClients) {
+                        thumbnails.jumpToPage(index);
+                      }
+                    },
+                    itemBuilder: (context, index) {
+                      final url = widget.images[index];
+                      Widget image = ExtendedImage.network(
+                        url,
+                        key: ValueKey((index, url)),
+                        headers: siteImageHeaders(url, cookie: widget.cookie),
+                        fit: BoxFit.contain,
+                        mode: ExtendedImageMode.gesture,
+                        enableSlideOutPage: true,
+                        onDoubleTap: (state) {
+                          HapticFeedbackUtil.selection();
+                          final begin = state.gestureDetails?.totalScale ?? 1;
+                          final decoded = state
+                              .widget
+                              .extendedImageState
+                              .extendedImageInfo
+                              ?.image;
+                          final isLong =
+                              decoded != null &&
+                              decoded.height / decoded.width > 2;
+                          final end = begin <= 1.05
+                              ? (isLong ? 3.5 : 2.5)
+                              : (begin <= 3.6 ? 6.0 : 1.0);
+                          final pointer = state.pointerDownPosition;
+                          zoom.stop();
+                          zoom.reset();
+                          if (zoomListener != null) {
+                            zoom.removeListener(zoomListener!);
                           }
-                        };
-                        zoom.addListener(zoomListener!);
-                        zoom.forward();
-                      },
-                      initGestureConfigHandler: (_) => GestureConfig(
-                        inPageView: true,
-                        initialScale: 1,
-                        maxScale: 5,
-                        cacheGesture: false,
-                      ),
-                      loadStateChanged: (state) =>
-                          switch (state.extendedImageLoadState) {
-                            LoadState.loading =>
-                              index == widget.initial && openingPreview != null
-                                  ? RawImage(
-                                      image: openingPreview,
-                                      fit: BoxFit.contain,
-                                    )
-                                  : const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
+                          zoomListener = () {
+                            if (state.mounted) {
+                              state.handleDoubleTap(
+                                scale:
+                                    begin +
+                                    (end - begin) *
+                                        Curves.easeOutCubic.transform(
+                                          zoom.value,
+                                        ),
+                                doubleTapPosition: pointer,
+                              );
+                            }
+                          };
+                          zoom.addListener(zoomListener!);
+                          zoom.forward();
+                        },
+                        initGestureConfigHandler: (_) => GestureConfig(
+                          inPageView: true,
+                          initialScale: 1,
+                          initialAlignment: InitialAlignment.center,
+                          minScale: 1,
+                          animationMinScale: 1,
+                          maxScale: 8,
+                          animationMaxScale: 9,
+                          speed: 1,
+                          inertialSpeed: 120,
+                          cacheGesture: false,
+                        ),
+                        loadStateChanged: (state) =>
+                            switch (state.extendedImageLoadState) {
+                              LoadState.loading =>
+                                index == widget.initial &&
+                                        openingPreview != null
+                                    ? RawImage(
+                                        image: openingPreview,
+                                        fit: BoxFit.contain,
+                                      )
+                                    : const Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                        ),
                                       ),
-                                    ),
-                            LoadState.failed => Center(
-                              child: TextButton.icon(
-                                onPressed: state.reLoadImage,
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('图片加载失败，点击重试'),
+                              LoadState.failed => Center(
+                                child: TextButton.icon(
+                                  onPressed: state.reLoadImage,
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('图片加载失败，点击重试'),
+                                ),
                               ),
-                            ),
-                            LoadState.completed => null,
-                          },
-                    );
-                    if (widget.heroScope case final scope?) {
-                      image = Hero(
-                        tag: forumGalleryHeroTag(scope, index, url),
-                        flightShuttleBuilder: forumGalleryFlight,
-                        child: image,
+                              LoadState.completed => null,
+                            },
                       );
-                    }
-                    return SizedBox.expand(child: Center(child: image));
-                  },
+                      if (widget.heroScope case final scope?) {
+                        image = HeroMode(
+                          enabled: index == current,
+                          child: Hero(
+                            tag: forumGalleryHeroTag(scope, index, url),
+                            flightShuttleBuilder: forumGalleryFlight,
+                            child: image,
+                          ),
+                        );
+                      }
+                      return SizedBox.expand(child: Center(child: image));
+                    },
+                  ),
                 ),
               ),
             ),
-            if (chrome && !sliding)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: chromeLayer(
+                'top-controls',
+                SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -467,53 +664,72 @@ class _GalleryPageState extends State<GalleryPage>
                   ),
                 ),
               ),
-            if (chrome && !sliding && widget.images.length > 1)
+            ),
+            if (widget.images.length > 1)
               Positioned(
-                left: 12,
-                right: 12,
-                bottom: MediaQuery.viewPaddingOf(context).bottom + 16,
-                child: SizedBox(
-                  height: 62,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) => ListView.builder(
-                      controller: thumbnails,
-                      padding: EdgeInsets.symmetric(
-                        horizontal:
-                            ((constraints.maxWidth -
-                                        widget.images.length * 62) /
-                                    2)
-                                .clamp(0.0, double.infinity),
-                      ),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: widget.images.length,
-                      itemBuilder: (context, index) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: InkWell(
-                          onTap: () => select(index),
-                          child: Container(
-                            width: 56,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: index == current
-                                    ? Colors.white
-                                    : Colors.transparent,
-                                width: 2,
+                left: 0,
+                right: 0,
+                bottom: MediaQuery.viewPaddingOf(context).bottom + 32,
+                child: chromeLayer(
+                  'thumbnail-controls',
+                  SizedBox(
+                    key: const ValueKey('gallery-thumbnail-strip'),
+                    height: 64,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: thumbnailScroll,
+                      child: PageView.builder(
+                        controller: thumbnails,
+                        physics: const ClampingScrollPhysics(),
+                        pageSnapping: false,
+                        itemCount: widget.images.length,
+                        itemBuilder: (context, index) => Semantics(
+                          label: '第 ${index + 1} 张图片',
+                          selected: index == current,
+                          button: true,
+                          child: GestureDetector(
+                            key: ValueKey('gallery-thumbnail-$index'),
+                            onTap: () => select(index),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 3,
+                                vertical: 2,
                               ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                widget.images[index],
-                                cacheWidth: 160,
-                                headers: siteImageHeaders(
-                                  widget.images[index],
-                                  cookie: widget.cookie,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: index == current
+                                        ? Colors.white
+                                        : Colors.transparent,
+                                    width: 2,
+                                  ),
                                 ),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => const Icon(
-                                  Icons.broken_image_outlined,
-                                  color: Colors.white54,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.network(
+                                        widget.images[index],
+                                        cacheWidth: 160,
+                                        headers: siteImageHeaders(
+                                          widget.images[index],
+                                          cookie: widget.cookie,
+                                        ),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) => const Icon(
+                                          Icons.broken_image_outlined,
+                                          color: Colors.white54,
+                                        ),
+                                      ),
+                                      if (index != current)
+                                        ColoredBox(
+                                          color: Colors.white.withValues(
+                                            alpha: .5,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
