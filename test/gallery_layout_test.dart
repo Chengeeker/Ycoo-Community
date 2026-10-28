@@ -93,6 +93,29 @@ void main() {
           .ignoring,
       isFalse,
     );
+    expect(
+      find.ancestor(
+        of: glassButtons.first,
+        matching: find.byType(AnimatedOpacity),
+      ),
+      findsNothing,
+    );
+    await tester.pump(const Duration(milliseconds: 70));
+    expect(tester.getTopLeft(glassButtons.first).dy, lessThan(100));
+    final openingOpacity = tester
+        .widgetList<ReviewGalleryGlassIconButton>(glassButtons)
+        .first
+        .opacity;
+    expect(openingOpacity, greaterThan(0));
+    expect(openingOpacity, lessThan(1));
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(tester.getTopLeft(glassButtons.first).dy, lessThan(100));
+    expect(
+      tester
+          .widgetList<ReviewGalleryGlassIconButton>(glassButtons)
+          .every((button) => button.opacity == 1),
+      isTrue,
+    );
 
     navigator.currentState!.pop();
     await tester.pump();

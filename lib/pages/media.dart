@@ -643,6 +643,20 @@ class _GalleryPageState extends State<GalleryPage>
     ),
   );
 
+  Widget toolbarLayer(String id, Widget Function(double opacity) builder) {
+    final visible = chrome && !sliding && routeAnimationComplete;
+    return IgnorePointer(
+      key: ValueKey('gallery-$id'),
+      ignoring: !visible,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: visible ? 1 : 0),
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        builder: (context, opacity, _) => builder(opacity),
+      ),
+    );
+  }
+
   Future<void> save() async {
     if (saving) return;
     setState(() => saving = true);
@@ -672,20 +686,24 @@ class _GalleryPageState extends State<GalleryPage>
     final liquidGlass =
         AppScope.maybeOf(context)?.settings.liquidGlass ?? false;
     final hideGlassChrome = liquidGlass && routeReturning;
-    Widget button(String tooltip, IconData icon, VoidCallback? action) =>
-        ReviewGalleryGlassIconButton(
-          icon: Icon(icon, color: Colors.white),
-          tooltip: tooltip,
-          opacity: routeAnimationComplete ? 1 : 0,
-          opacityKey: ValueKey('gallery-$tooltip'),
-          useLiquidGlass: liquidGlass,
-          onPressed: action == null
-              ? null
-              : () {
-                  HapticFeedbackUtil.light();
-                  action();
-                },
-        );
+    Widget button(
+      String tooltip,
+      IconData icon,
+      VoidCallback? action,
+      double opacity,
+    ) => ReviewGalleryGlassIconButton(
+      icon: Icon(icon, color: Colors.white),
+      tooltip: tooltip,
+      opacity: opacity,
+      opacityKey: ValueKey('gallery-$tooltip'),
+      useLiquidGlass: liquidGlass,
+      onPressed: action == null
+          ? null
+          : () {
+              HapticFeedbackUtil.light();
+              action();
+            },
+    );
     return ExtendedImageSlidePage(
       slideAxis: SlideAxis.horizontal,
       slideType: SlideType.onlyImage,
@@ -856,9 +874,9 @@ class _GalleryPageState extends State<GalleryPage>
                 top: 0,
                 left: 0,
                 right: 0,
-                child: chromeLayer(
+                child: toolbarLayer(
                   'top-controls',
-                  SafeArea(
+                  (opacity) => SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -871,21 +889,25 @@ class _GalleryPageState extends State<GalleryPage>
                             '返回',
                             Icons.arrow_back_rounded,
                             () => Navigator.pop(context),
+                            opacity,
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black45,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              '${current + 1} / ${widget.images.length}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                          Opacity(
+                            opacity: opacity,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black45,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                '${current + 1} / ${widget.images.length}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
@@ -895,6 +917,7 @@ class _GalleryPageState extends State<GalleryPage>
                                 ? Icons.hourglass_empty
                                 : Icons.download_rounded,
                             saving ? null : save,
+                            opacity,
                           ),
                         ],
                       ),

@@ -564,3 +564,12 @@
 - 版本升至 `1.0.6+34`。ARM64 Release 构建成功（451 秒）；AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.6` / versionCode `34`，原生库仅 `arm64-v8a`。
 - APK：`D:/App/源社区/源社区_v1.0.6.apk`，35,954,942 字节，SHA-256 `D50C97071DC57DFA8262751980D4C15A85B9F3F276617850A8BB2D1DE97827C3`，`release.sha256` 已同步。签名 v2 验证通过，证书 SHA-256 与指定 BKS 一致；16 KiB zipalign 检查通过。验证后已删除旧 APK，仅保留最新正式包。
 - 构建日志：`build/logs/release-1.0.6-icons.log`。未安装到设备，底栏及图库控件的实际显示尚未真机验收。
+
+## 1.0.7+35 图库顶部玻璃按钮进场对齐（2026-10-28）
+
+- 修复液态玻璃图库打开时按钮圆形玻璃背景先与图标错位、随后跳到位的问题。原因是工具栏 `AnimatedOpacity` 与玻璃按钮内部 `visibility` 使用了不同步的显示进度；现在两者共享同一进度逐个淡入。
+- 保留 `StackFit.expand` 下顶部 `Positioned(top: 0, left: 0, right: 0)`，防止工具栏被拉伸成整屏高度；主图、Hero、缩略图居中和图片播放器动画不变。
+- `test/gallery_layout_test.dart` 图库定向测试 8/8 通过；`dart analyze lib/pages/media.dart test/gallery_layout_test.dart` 无诊断。
+- ARM64 Release 构建成功（457 秒）。AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.7` / versionCode `35`、仅 `arm64-v8a`；Material 图标字体完整（1,645,184 字节）。
+- APK：`D:/App/源社区/源社区_v1.0.7.apk`，SHA-256 `2F1570B3FEDB7A56CA8CF6E8617383BA1F843E9E26875443E9E90F988D471FC6`；`release.sha256` 已同步。APK v2 签名证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 匹配指定 BKS；16 KiB zipalign 校验通过。验证后删除根目录旧版 APK，当前仅留该正式包。
+- 构建日志位于 `build/logs/release-1.0.7-gallery-toolbar-alignment.log`。未安装到真机；按钮玻璃位置的真实设备动画观感仍待设备验收。
