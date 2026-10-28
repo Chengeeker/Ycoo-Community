@@ -3,9 +3,111 @@ import 'dart:ui' as ui;
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yuan_community/core/widgets/app_scope.dart';
+import 'package:yuan_community/core/widgets/review_gallery_glass_button.dart';
+import 'package:yuan_community/data/site.dart';
 import 'package:yuan_community/pages/media.dart';
+import 'package:yuan_community/settings.dart';
 
 void main() {
+  testWidgets('gallery glass controls fade in and are removed on return', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'liquidGlass': true});
+    final prefs = await SharedPreferences.getInstance();
+    final settings = Settings(prefs);
+    addTearDown(settings.dispose);
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigator,
+        builder: (context, child) =>
+            AppScope(site: Site(prefs), settings: settings, child: child!),
+        home: const Scaffold(body: Text('host')),
+      ),
+    );
+
+    navigator.currentState!.push(
+      PageRouteBuilder<void>(
+        opaque: false,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 260),
+        pageBuilder: (_, _, _) => const GalleryPage(
+          [
+            'https://example.invalid/gallery.png',
+            'https://example.invalid/second.png',
+          ],
+          0,
+          cookie: 'test',
+        ),
+      ),
+    );
+    await tester.pump();
+    final glassButtons = find.byType(
+      ReviewGalleryGlassIconButton,
+      skipOffstage: false,
+    );
+    expect(glassButtons, findsNWidgets(2));
+    expect(
+      tester
+          .widgetList<ReviewGalleryGlassIconButton>(glassButtons)
+          .every((button) => button.opacity == 0),
+      isTrue,
+    );
+    expect(
+      find.byKey(
+        const ValueKey('gallery-thumbnail-strip'),
+        skipOffstage: false,
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<IgnorePointer>(
+            find.byKey(
+              const ValueKey('gallery-top-controls'),
+              skipOffstage: false,
+            ),
+          )
+          .ignoring,
+      isTrue,
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(glassButtons, findsNWidgets(2));
+    expect(
+      tester
+          .widgetList<ReviewGalleryGlassIconButton>(glassButtons)
+          .every((button) => button.useLiquidGlass),
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<IgnorePointer>(
+            find.byKey(
+              const ValueKey('gallery-top-controls'),
+              skipOffstage: false,
+            ),
+          )
+          .ignoring,
+      isFalse,
+    );
+
+    navigator.currentState!.pop();
+    await tester.pump();
+    expect(glassButtons, findsNothing);
+    expect(
+      find.byKey(
+        const ValueKey('gallery-thumbnail-strip'),
+        skipOffstage: false,
+      ),
+      findsNothing,
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(GalleryPage), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final size in [const Size(393, 873), const Size(873, 393)]) {
     for (final count in [1, 2]) {
       testWidgets(

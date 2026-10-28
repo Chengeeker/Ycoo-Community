@@ -1,6 +1,6 @@
 # 源社区开发文档
 
-更新：2026-10-28。当前版本 1.0.3+31，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
+更新：2026-10-28。当前版本 1.0.4+32，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
 
 ## 约束与基线
 
@@ -534,3 +534,14 @@
 - APK：`D:/App/源社区/源社区_v1.0.3.apk`，35,409,210 字节，SHA-256 `55068FC3A8615BDB4251407069FF88E2FA64254BA9776BD114BADE55CEC40099`，`release.sha256` 已同步。
 - AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.3` / versionCode `31`、minSdk 24，ZIP 中原生库仅 `arm64-v8a`。APK v2 签名及证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 通过；16 KiB zipalign 校验成功。
 - 验证完成后删除旧版根目录 APK 和 `previous-releases` 下旧 APK，只保留当前正式包。未安装到真机；设备图像切换观感尚未现场验收。
+
+## 1.0.4+32 GreenNote 图库玻璃转场优化（2026-10-28）
+
+- 对照 `D:/App/GreenNote/lib/features/feed/image_gallery_page.dart`：图库进场时玻璃控件透明且不可交互；液态玻璃开启时，返回转场移除顶部工具栏和缩略图玻璃控件子树，结束后页面随路由销毁。不开启液态玻璃时只按原有淡出行为处理。
+- 图片画布、Hero 几何、缩略图居中及播放器手势不变；控件不在退场时参与玻璃渲染。
+- `test/gallery_layout_test.dart`：8/8 通过，覆盖进场透明/禁用交互、完成后恢复和返回时移除控件；改动 Dart 文件定向 analyze 无诊断。
+- 版本升至 `1.0.4+32`；离线 ARM64 `assembleRelease` 成功（1 分 24 秒）。AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.4` / versionCode `32`、minSdk 24，APK 和 ZIP 原生库仅含 `arm64-v8a`。
+- APK：`D:/App/源社区/源社区_v1.0.4.apk`，35,409,206 字节，SHA-256 `040AB7C5E099F5A2BBCD7CA44834D0AC8835B92331433EBBB700305A6B11B889`；`release.sha256` 已同步。复制包与构建产物哈希一致。
+- APK v2 签名验证通过；证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 与指定 BKS 一致。`zipalign -c -P 16 -v 4` 校验成功。
+- 验证完成后删除根目录旧版 APK 及 `previous-releases` 下旧 APK，只保留当前正式包。Gradle 日志位于 `build/logs/release-1.0.4-gallery-glass-transition.log`。
+- 未安装到真机；退场转场的 GPU 帧耗时尚未在设备上测量。

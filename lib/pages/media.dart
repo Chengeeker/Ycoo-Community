@@ -378,6 +378,9 @@ class _GalleryPageState extends State<GalleryPage>
   );
   late int current = widget.initial;
   bool chrome = true, saving = false, sliding = false;
+  Animation<double>? routeAnimation;
+  bool routeAnimationComplete = true;
+  bool routeReturning = false;
   VoidCallback? zoomListener;
   ui.Image? openingPreview;
   bool thumbnailDragging = false, thumbnailSettling = false;
@@ -387,6 +390,36 @@ class _GalleryPageState extends State<GalleryPage>
   Offset? tapDown, pendingTap;
   bool tapMoved = false;
   Timer? tapTimer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    final next = route?.animation;
+    if (identical(next, routeAnimation)) return;
+    routeAnimation?.removeStatusListener(routeStatusChanged);
+    routeAnimation = next;
+    routeAnimationComplete =
+        next == null ||
+        (route?.isFirst == true && next.status == AnimationStatus.completed);
+    routeReturning = false;
+    next?.addStatusListener(routeStatusChanged);
+  }
+
+  void routeStatusChanged(AnimationStatus status) {
+    final complete = status == AnimationStatus.completed;
+    final returning =
+        status == AnimationStatus.reverse ||
+        (routeReturning && status != AnimationStatus.completed);
+    if (!mounted ||
+        (routeAnimationComplete == complete && routeReturning == returning)) {
+      return;
+    }
+    setState(() {
+      routeAnimationComplete = complete;
+      routeReturning = returning;
+    });
+  }
 
   void retainPreview(ui.Image? image) {
     openingPreview?.dispose();
@@ -407,6 +440,7 @@ class _GalleryPageState extends State<GalleryPage>
   @override
   void dispose() {
     tapTimer?.cancel();
+    routeAnimation?.removeStatusListener(routeStatusChanged);
     zoom.dispose();
     thumbnails.removeListener(syncMainToThumbnail);
     thumbnails.dispose();
@@ -582,9 +616,9 @@ class _GalleryPageState extends State<GalleryPage>
 
   Widget chromeLayer(String id, Widget child) => IgnorePointer(
     key: ValueKey('gallery-$id'),
-    ignoring: !chrome || sliding,
+    ignoring: !chrome || sliding || !routeAnimationComplete,
     child: AnimatedOpacity(
-      opacity: chrome && !sliding ? 1 : 0,
+      opacity: chrome && !sliding && routeAnimationComplete ? 1 : 0,
       duration: const Duration(milliseconds: 140),
       child: child,
     ),
@@ -618,11 +652,12 @@ class _GalleryPageState extends State<GalleryPage>
   Widget build(BuildContext context) {
     final liquidGlass =
         AppScope.maybeOf(context)?.settings.liquidGlass ?? false;
+    final hideGlassChrome = liquidGlass && routeReturning;
     Widget button(String tooltip, IconData icon, VoidCallback? action) =>
         ReviewGalleryGlassIconButton(
           icon: Icon(icon, color: Colors.white),
           tooltip: tooltip,
-          opacity: 1,
+          opacity: routeAnimationComplete ? 1 : 0,
           opacityKey: ValueKey('gallery-$tooltip'),
           useLiquidGlass: liquidGlass,
           onPressed: action == null
@@ -797,57 +832,58 @@ class _GalleryPageState extends State<GalleryPage>
                 ),
               ),
             ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: chromeLayer(
-                'top-controls',
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        button(
-                          '返回',
-                          Icons.arrow_back_rounded,
-                          () => Navigator.pop(context),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
+            if (!hideGlassChrome)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: chromeLayer(
+                  'top-controls',
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          button(
+                            '返回',
+                            Icons.arrow_back_rounded,
+                            () => Navigator.pop(context),
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.black45,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            '${current + 1} / ${widget.images.length}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              '${current + 1} / ${widget.images.length}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
-                        button(
-                          saving ? '正在保存' : '保存图片到相册',
-                          saving
-                              ? Icons.hourglass_empty
-                              : Icons.download_rounded,
-                          saving ? null : save,
-                        ),
-                      ],
+                          button(
+                            saving ? '正在保存' : '保存图片到相册',
+                            saving
+                                ? Icons.hourglass_empty
+                                : Icons.download_rounded,
+                            saving ? null : save,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            if (widget.images.length > 1)
+            if (widget.images.length > 1 && !hideGlassChrome)
               Positioned(
                 left: 0,
                 right: 0,
