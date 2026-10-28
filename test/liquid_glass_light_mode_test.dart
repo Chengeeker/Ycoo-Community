@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -25,6 +27,13 @@ void main() {
     await tester.pumpAndSettle();
 
     final bar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
+    final screenWidth = MediaQuery.sizeOf(
+      tester.element(find.byType(GlassTabBar)),
+    ).width;
+    expect(
+      tester.getSize(find.byType(GlassTabBar)).width,
+      closeTo(math.min(440.0, screenWidth - 40.0) * 8 / 9, 0.01),
+    );
     expect(bar.settings?.glassColor, const Color(0xF0FFFFFF));
     expect(bar.settings?.rimLight, 1);
     expect(bar.settings?.shadowElevation, 0.55);
@@ -32,6 +41,8 @@ void main() {
     expect(bar.indicatorSettings?.bodyMode, GlassBodyMode.clear);
     expect(bar.indicatorSettings?.rimShade, 0.12);
     expect(bar.indicatorSettings?.rimLight, 0.35);
+    expect(bar.indicatorPinchStrength, 0);
+    expect(bar.indicatorExpansion, EdgeInsets.zero);
     expect(bar.indicatorColor, const Color(0x26000000));
     expect(bar.selectedIconColor, colorScheme.primary);
     expect(bar.selectedLabelColor, colorScheme.primary);
@@ -69,6 +80,8 @@ void main() {
     expect(bar.indicatorSettings?.bodyMode, GlassBodyMode.adaptive);
     expect(bar.indicatorSettings?.rimShade, 0);
     expect(bar.indicatorSettings?.rimLight, 0);
+    expect(bar.indicatorPinchStrength, 0);
+    expect(bar.indicatorExpansion, EdgeInsets.zero);
     expect(bar.indicatorColor, const Color(0x66000000));
     expect(bar.selectedIconColor, Colors.white);
     expect(bar.unselectedIconColor, Colors.white);

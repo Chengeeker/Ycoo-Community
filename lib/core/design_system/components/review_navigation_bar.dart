@@ -68,7 +68,9 @@ class ReviewNavigationBar extends StatelessWidget {
   ];
 
   static double _floatingBarWidth(BuildContext context) =>
-      math.min(440.0, MediaQuery.sizeOf(context).width - 32.0).toDouble();
+      math.min(440.0, MediaQuery.sizeOf(context).width - 40.0).toDouble() *
+      8 /
+      9;
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +149,8 @@ class ReviewNavigationBar extends StatelessWidget {
                         rimShade: isLightMode ? 0.12 : 0,
                         rimLight: isLightMode ? 0.35 : 0,
                       ),
+                      indicatorPinchStrength: 0,
+                      indicatorExpansion: EdgeInsets.zero,
                       quality: GlassQuality.premium,
                       backgroundQuality: GlassQuality.premium,
                       maskingQuality: MaskingQuality.high,
