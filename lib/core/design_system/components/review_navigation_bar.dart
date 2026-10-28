@@ -133,7 +133,7 @@ class ReviewNavigationBar extends StatelessWidget {
                         refractiveIndex: 1.19,
                         chromaticAberration: 0.008,
                         rimLight: isLightMode ? 1 : 0,
-                        shadowElevation: 0,
+                        shadowElevation: isLightMode ? 0.55 : 0,
                       ),
                       indicatorSettings: LiquidGlassSettings(
                         glassColor: isLightMode

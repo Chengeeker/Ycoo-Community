@@ -1,6 +1,6 @@
 # 源社区开发文档
 
-更新：2026-10-28。当前版本 1.0.0+27，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
+更新：2026-10-28。当前版本 1.0.0+28，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
 
 ## 约束与基线
 
@@ -496,3 +496,11 @@
 - 离线 ARM64 正式构建成功。AAPT 确认包名 `ycoo.net.php`、versionName `1.0.0` / versionCode `27`、仅 `arm64-v8a`；APK v2 签名匹配指定 BKS 证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975`，16 KiB zipalign 校验通过。
 - 正式包：`D:/App/源社区/源社区_v1.0.0.apk`，35,409,206 字节，SHA-256 `DD0D7B3CA74215BECA0717964CF77191C751DBCDE397D8B327A7C465291DA3D1`；新包验证通过后已替换根目录旧包。Gradle 日志位于 `build/logs`。
 - 未安装到设备；玻璃效果的实际观感与 GPU 表现仍待真机确认。
+
+## 1.0.0+28 浅色液态玻璃悬浮底栏阴影（2026-10-28）
+
+- 仅将浅色液态玻璃悬浮底栏外壳 `shadowElevation` 设为 0.55；深色仍为 0，其他玻璃胶囊与图片播放器均未修改。
+- 定向浅色/深色底栏测试 2/2 通过，目标 Dart 分析通过。
+- 离线 ARM64 正式构建成功。AAPT 确认包名 `ycoo.net.php`、versionName `1.0.0` / versionCode `28`、仅 `arm64-v8a`；APK v2 签名匹配指定 BKS 证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975`，16 KiB zipalign 校验通过。
+- 正式包 `D:/App/源社区/源社区_v1.0.0.apk`，35,409,206 字节，SHA-256 `9C3F8B3C6279E13C6FCDA7A5F5D0DFE46A303F49FEBF4F34BB3F12088FBDE587`；校验成功后替换了旧 APK，根目录仅保留最新版。Gradle 日志位于 `build/logs`。
+- 未安装到设备；真机阴影观感与 GPU 表现待设备确认。
