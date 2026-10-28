@@ -126,6 +126,7 @@ class GalleryPage extends StatefulWidget {
     this.initial, {
     this.cookie = '',
     this.heroScope,
+    this.previews = const [],
     super.key,
   });
 
@@ -133,6 +134,10 @@ class GalleryPage extends StatefulWidget {
   final String cookie;
   final int initial;
   final Object? heroScope;
+  final List<String> previews;
+
+  String previewFor(int index) =>
+      index < previews.length ? previews[index] : images[index];
 
   @override
   State<GalleryPage> createState() => _GalleryPageState();
@@ -144,6 +149,7 @@ Future<void> openGallery(
   int initial, {
   String cookie = '',
   Object? heroScope,
+  List<String> previews = const [],
 }) async {
   if (images.isEmpty || initial < 0 || initial >= images.length) return;
   if (cookie.isEmpty) {
@@ -170,8 +176,13 @@ Future<void> openGallery(
       opaque: false,
       transitionDuration: const Duration(milliseconds: 280),
       reverseTransitionDuration: const Duration(milliseconds: 260),
-      pageBuilder: (_, animation, secondary) =>
-          GalleryPage(images, initial, cookie: cookie, heroScope: heroScope),
+      pageBuilder: (_, animation, secondary) => GalleryPage(
+        images,
+        initial,
+        cookie: cookie,
+        heroScope: heroScope,
+        previews: previews,
+      ),
       transitionsBuilder: (_, animation, secondary, child) =>
           FadeTransition(opacity: animation, child: child),
     ),
@@ -664,6 +675,7 @@ class _GalleryPageState extends State<GalleryPage>
                     },
                     itemBuilder: (context, index) {
                       final url = widget.images[index];
+                      final previewUrl = widget.previewFor(index);
                       Widget image = ExtendedImage.network(
                         url,
                         width: double.infinity,
@@ -729,6 +741,27 @@ class _GalleryPageState extends State<GalleryPage>
                                     ? RawImage(
                                         image: openingPreview,
                                         fit: BoxFit.contain,
+                                      )
+                                    : previewUrl != url
+                                    ? Image.network(
+                                        previewUrl,
+                                        key: ValueKey((
+                                          'gallery-preview',
+                                          index,
+                                          previewUrl,
+                                        )),
+                                        headers: siteImageHeaders(
+                                          previewUrl,
+                                          cookie: widget.cookie,
+                                        ),
+                                        fit: BoxFit.contain,
+                                        cacheWidth: 1200,
+                                        gaplessPlayback: true,
+                                        errorBuilder: (_, _, _) => const Center(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       )
                                     : const Center(
                                         child: CircularProgressIndicator(
@@ -859,10 +892,10 @@ class _GalleryPageState extends State<GalleryPage>
                                     fit: StackFit.expand,
                                     children: [
                                       Image.network(
-                                        widget.images[index],
+                                        widget.previewFor(index),
                                         cacheWidth: 160,
                                         headers: siteImageHeaders(
-                                          widget.images[index],
+                                          widget.previewFor(index),
                                           cookie: widget.cookie,
                                         ),
                                         fit: BoxFit.cover,

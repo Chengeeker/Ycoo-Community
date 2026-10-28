@@ -78,6 +78,37 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
   });
+  testWidgets(
+    'gallery keeps the Discuz preview visible while the original loads',
+    (tester) async {
+      const preview = 'https://example.invalid/preview.jpg';
+      const original = 'https://example.invalid/original.jpg';
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HtmlContent(
+              '<img src="$preview" file="$original">',
+              onLink: (_) => fail('Image must open gallery'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      final gallery = tester.widget<GalleryPage>(find.byType(GalleryPage));
+      expect(gallery.images, [original]);
+      expect(gallery.previews, [preview]);
+      expect(
+        find.byKey(const ValueKey(('gallery-preview', 0, preview))),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
   test('image attachment already in body is not duplicated', () {
     final source = forumPostHtml({
       'message':

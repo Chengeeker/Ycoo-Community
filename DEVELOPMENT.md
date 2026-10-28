@@ -1,6 +1,6 @@
 # 源社区开发文档
 
-更新：2026-10-28。当前版本 1.0.2+30，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
+更新：2026-10-28。当前版本 1.0.3+31，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
 
 ## 约束与基线
 
@@ -523,3 +523,14 @@
 - APK：`D:/App/源社区/源社区_v1.0.2.apk`，35,409,210 字节，SHA-256 `9F4CFDC8F945BDA6BFC0BBBAF73EFB9E8CB6B99AE4CABB7C2CE02D809C515534`，`release.sha256` 已同步。
 - AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.2` / versionCode `30`、minSdk 24；APK 原生库仅 `arm64-v8a`。签名 v2 通过且证书 SHA-256 与指定 BKS 一致；16 KiB zipalign 校验通过。校验完成后根目录及 `previous-releases` 中旧 APK 已清理，只保留当前正式包。
 - 未安装到设备；尚未进行真机页面切换视觉验收。
+
+## 1.0.3+31 图库原图加载预览保持（2026-10-28）
+
+- 帖子正文图片从 Discuz 的 `data-src` / `src` 选择可用预览源，图库仍以 `file` / `zoomfile` 等原图源作为高清主图；无单独预览时沿用原图地址。Hero 起点和底部缩略连廊优先使用预览图。
+- Review 式全屏图库在原图解码期间保留已捕获的 Hero 帧；没有捕获帧但存在独立缩略图时显示该预览，原图加载完成后才替换，避免黑底等待。
+- 定向 `content_regression_test.dart` 回归通过，覆盖 Discuz `src` 预览、`file` 原图传递和加载中的预览帧；改动文件 `dart analyze --format machine` 无诊断。
+- 首次测试命令从中文工作路径触发本机 Impeller include 路径乱码；按既有构建约定改从 `V:\` ASCII 映射运行，测试通过。未修改 shader、依赖或播放器动画。
+- 离线 ARM64 `assembleRelease` 成功（36 秒）；Gradle 日志为 `build/logs/release-1.0.3-image-preview.log`。
+- APK：`D:/App/源社区/源社区_v1.0.3.apk`，35,409,210 字节，SHA-256 `55068FC3A8615BDB4251407069FF88E2FA64254BA9776BD114BADE55CEC40099`，`release.sha256` 已同步。
+- AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.3` / versionCode `31`、minSdk 24，ZIP 中原生库仅 `arm64-v8a`。APK v2 签名及证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 通过；16 KiB zipalign 校验成功。
+- 验证完成后删除旧版根目录 APK 和 `previous-releases` 下旧 APK，只保留当前正式包。未安装到真机；设备图像切换观感尚未现场验收。

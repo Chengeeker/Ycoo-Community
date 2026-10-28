@@ -559,7 +559,7 @@ class _HtmlContentState extends State<HtmlContent> {
   Widget build(BuildContext context) {
     clear();
     final theme = Theme.of(context);
-    final blocks = <Widget>[], images = <String>[];
+    final blocks = <Widget>[], images = <String>[], previews = <String>[];
     final buffer = <InlineSpan>[];
     void flush() {
       if (buffer.isEmpty) return;
@@ -722,6 +722,16 @@ class _HtmlContentState extends State<HtmlContent> {
                 .map((value) => value.trim())
                 .firstWhere((value) => value.isNotEmpty, orElse: () => '');
         if (path.isEmpty) return;
+        final previewPath =
+            [
+                  node.attributes['data-src'],
+                  node.attributes['src'],
+                  node.attributes['zoomfile'],
+                  node.attributes['file'],
+                ]
+                .whereType<String>()
+                .map((value) => value.trim())
+                .firstWhere((value) => value.isNotEmpty, orElse: () => '');
         var uri = siteUri(path);
         if (uri.scheme == 'http' &&
             uri.host == 'ycoo.net' &&
@@ -734,7 +744,9 @@ class _HtmlContentState extends State<HtmlContent> {
         }
         flush();
         final url = uri.toString();
+        final previewUrl = forumMediaUrl(previewPath) ?? url;
         images.add(url);
+        previews.add(previewUrl);
         final imageIndex = images.length - 1;
         blocks.add(
           Padding(
@@ -753,6 +765,7 @@ class _HtmlContentState extends State<HtmlContent> {
                         imageIndex,
                         cookie: widget.cookie,
                         heroScope: galleryScope,
+                        previews: List.of(previews),
                       ),
                 child: Hero(
                   tag: forumGalleryHeroTag(galleryScope, imageIndex, url),
@@ -762,8 +775,11 @@ class _HtmlContentState extends State<HtmlContent> {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 440),
                       child: Image.network(
-                        url,
-                        headers: siteImageHeaders(url, cookie: widget.cookie),
+                        previewUrl,
+                        headers: siteImageHeaders(
+                          previewUrl,
+                          cookie: widget.cookie,
+                        ),
                         fit: BoxFit.contain,
                         cacheWidth: 1200,
                         loadingBuilder: (context, child, progress) =>
