@@ -556,3 +556,11 @@
 - APK：`D:/App/源社区/源社区_v1.0.5.apk`，34,985,289 字节，SHA-256 `795CC4A8B312E3FB2D1AC5346D1C1B9730E0E496D64C4AAA8AF518500CD2A845`，`release.sha256` 已同步。签名 v2 验证通过，证书 SHA-256 与指定 BKS 一致；`zipalign -c -P 16 -v 4` 校验成功。新包核验后删除旧 APK，项目根目录只保留此包。
 - 构建脚本创建嵌套临时盘符被 Windows 拒绝；从已有 `V:` ASCII 映射直接运行 Flutter ARM64 发布构建成功。项目根目录遗留的 Flutter 日志已移至 `build/logs`。
 - 未安装到设备；连续反向开合、330ms 打开时长的实际观感及帧耗时尚未真机验收。
+
+## 1.0.6+34 Material 图标缺字修复（2026-10-28）
+
+- 根据底栏/帖子操作图标乱码及图片播放器顶部按钮消失的截图排查，旧发布构建将 `MaterialIcons-Regular.otf` 裁剪到 7,048 字节；液态玻璃组件通过参数接收的图标字形因此不完整。正式构建改用 `--no-tree-shake-icons`，播放器和玻璃组件代码未改。
+- `tool/build_release.ps1` 已同步禁用图标字体裁剪。Release APK 内完整 Material 图标字体为 1,645,184 字节；`FontManifest.json` 指向该资源。
+- 版本升至 `1.0.6+34`。ARM64 Release 构建成功（451 秒）；AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.6` / versionCode `34`，原生库仅 `arm64-v8a`。
+- APK：`D:/App/源社区/源社区_v1.0.6.apk`，35,954,942 字节，SHA-256 `D50C97071DC57DFA8262751980D4C15A85B9F3F276617850A8BB2D1DE97827C3`，`release.sha256` 已同步。签名 v2 验证通过，证书 SHA-256 与指定 BKS 一致；16 KiB zipalign 检查通过。验证后已删除旧 APK，仅保留最新正式包。
+- 构建日志：`build/logs/release-1.0.6-icons.log`。未安装到设备，底栏及图库控件的实际显示尚未真机验收。

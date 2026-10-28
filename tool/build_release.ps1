@@ -19,7 +19,8 @@ try {
     $env:JAVA_TOOL_OPTIONS="$previousJavaOptions -Djdk.net.unixdomain.tmpdir=C:\Windows\Temp -Dfile.encoding=UTF-8"
     $dep=Join-Path $project 'build\app\intermediates\flutter\release\flutter_build.d'
     if(Test-Path -LiteralPath $dep) { Remove-Item -LiteralPath $dep }
-    & $flutter build apk --release --target-platform android-arm64 --no-pub
+    # Keep all Material glyphs used through liquid-glass icon widgets.
+    & $flutter build apk --release --target-platform android-arm64 --no-pub --no-tree-shake-icons
     if ($LASTEXITCODE -ne 0) { throw 'Release build failed.' }
     $apk=Join-Path "$($letter):\" 'build\app\outputs\flutter-apk\app-release.apk'
     $tools=Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools\36.0.0'
