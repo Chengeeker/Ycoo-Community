@@ -11,7 +11,7 @@
 - 导读：newthread/hot/digest/new/sofa，index=1&mobile=2。
 - 默认头像：站点 data/avatar/noavatar.svg，原始 SVG 保存在 assets/default-avatar.svg。
 
-## 实现对照（1.0.1+29）
+## 实现对照（1.0.2+30）
 
 | 基准能力 | 当前实现 |
 | --- | --- |

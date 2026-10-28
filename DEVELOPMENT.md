@@ -1,6 +1,6 @@
 # 源社区开发文档
 
-更新：2026-10-28。当前版本 1.0.1+29，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
+更新：2026-10-28。当前版本 1.0.2+30，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
 
 ## 约束与基线
 
@@ -513,3 +513,13 @@
 - 离线 ARM64 正式构建成功。AAPT 确认包名 `ycoo.net.php`、versionName `1.0.1` / versionCode `29`、仅 `arm64-v8a`；APK v2 签名匹配指定 BKS 证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975`，16 KiB zipalign 校验通过。
 - 正式包 `D:/App/源社区/源社区_v1.0.1.apk`，35,409,210 字节，SHA-256 `1E72E74260B85A4C6B162B12E428FE4004ACB1A5BCCC9A0EBA836F6014BC6DC0`；新包验证成功后删除根目录旧 APK，当前仅留此包。Gradle 日志位于 `build/logs`。
 - 未安装到设备；底栏触感/液态效果的真机表现仍待确认。
+
+## 1.0.2+30 主底栏平移切页（2026-10-28）
+
+- 参考 `D:/App/Lurk/lib/features/home/presentation/main_scaffold.dart`：主底栏不同页面间使用 260ms `easeOutCubic` 双向平移；按页签顺序及 RTL 调整方向，中途再次切页从当前偏移连续开始。
+- 保留访问后懒加载和页面状态；仅当前页接收指针，转场期间维持前后页 ticker。尊重系统减少动态效果设置，关闭动画时直接切换。内部分栏与图库转场不变。
+- 定向 `following_tabs_test.dart` 8/8 通过，目标 Dart 分析无错误；转场断言覆盖新旧页面移动与返回首页不重复加载信息流。
+- 发布脚本创建临时 subst 路径时被 Windows 拒绝；改用本机指向同一工作区的 ASCII `V:` 路径，执行离线 Gradle `assembleRelease` 成功。日志：`build/logs/release-20261028-home-tab-slide.log`。
+- APK：`D:/App/源社区/源社区_v1.0.2.apk`，35,409,210 字节，SHA-256 `9F4CFDC8F945BDA6BFC0BBBAF73EFB9E8CB6B99AE4CABB7C2CE02D809C515534`，`release.sha256` 已同步。
+- AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.2` / versionCode `30`、minSdk 24；APK 原生库仅 `arm64-v8a`。签名 v2 通过且证书 SHA-256 与指定 BKS 一致；16 KiB zipalign 校验通过。校验完成后根目录及 `previous-releases` 中旧 APK 已清理，只保留当前正式包。
+- 未安装到设备；尚未进行真机页面切换视觉验收。

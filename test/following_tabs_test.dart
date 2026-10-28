@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yuan_community/core/design_system/components/review_card.dart';
+import 'package:yuan_community/core/design_system/components/review_navigation_bar.dart';
 import 'package:yuan_community/data/portal.dart';
 import 'package:yuan_community/data/site.dart';
 import 'package:yuan_community/pages/home.dart';
@@ -91,6 +92,46 @@ class FollowingPageSite extends Site {
 }
 
 void main() {
+  testWidgets('primary navigation slides pages and preserves feed state', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final site = PreviewSite(prefs);
+    await tester.pumpWidget(MaterialApp(home: HomePage(site, Settings(prefs))));
+    await tester.pumpAndSettle();
+    final requests = site.topicRequests;
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ReviewNavigationBar),
+        matching: find.text('社区'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 130));
+    final incoming = tester.widget<SlideTransition>(
+      find.byKey(const ValueKey('home-tab-slide-1')),
+    );
+    final outgoing = tester.widget<SlideTransition>(
+      find.byKey(const ValueKey('home-tab-slide-0')),
+    );
+    expect(incoming.position.value.dx, inInclusiveRange(0, 1));
+    expect(incoming.position.value.dx, greaterThan(0));
+    expect(outgoing.position.value.dx, lessThan(0));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ReviewNavigationBar),
+        matching: find.text('首页'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(site.topicRequests, requests);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final scenario in ['success', 'retry', 'cancel', 'guest', 'network']) {
     testWidgets('startup session $scenario preserves the selected page', (
       tester,

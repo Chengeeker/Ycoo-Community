@@ -32,21 +32,108 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   int index = 0;
+  int previousIndex = 0;
+  bool transitioning = false;
   final visited = <int>{0};
   var feed = GlobalKey<_TopicsPageState>();
   var guide = GlobalKey<_TopicsPageState>();
+  late final AnimationController tabTransitionController;
+  late final CurvedAnimation tabTransitionCurve;
+  late Animation<Offset> tabIncomingTransition;
+  late Animation<Offset> tabOutgoingTransition;
   late Future<List<Map<String, dynamic>>> forums;
   late final Future<void> initialSession;
   Future<void>? sessionRetry;
   bool sessionResolved = false;
   DateTime? lastTap;
   void selectTab(int value) {
+    if (value == index) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      tabTransitionController.stop();
+      setState(() {
+        previousIndex = value;
+        index = value;
+        visited.add(value);
+        transitioning = false;
+        tabIncomingTransition = const AlwaysStoppedAnimation(Offset.zero);
+        tabOutgoingTransition = const AlwaysStoppedAnimation(Offset.zero);
+      });
+      tabTransitionController.value = 1;
+      return;
+    }
+
+    final currentOffset = transitioning
+        ? tabIncomingTransition.value
+        : Offset.zero;
+    var direction = value > index ? 1.0 : -1.0;
+    if (Directionality.of(context) == TextDirection.rtl) direction *= -1;
     setState(() {
+      previousIndex = index;
       index = value;
       visited.add(value);
+      transitioning = true;
+      tabIncomingTransition = Tween<Offset>(
+        begin: Offset(direction, 0),
+        end: Offset.zero,
+      ).animate(tabTransitionCurve);
+      tabOutgoingTransition = Tween<Offset>(
+        begin: currentOffset,
+        end: Offset(-direction, 0),
+      ).animate(tabTransitionCurve);
     });
+    tabTransitionController.forward(from: 0);
+  }
+
+  void _onTabTransitionStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && transitioning && mounted) {
+      setState(() => transitioning = false);
+    }
+  }
+
+  Widget _buildTabContent(List<Widget> pages) {
+    final pageOrder = List<int>.generate(pages.length, (page) => page)
+      ..sort((a, b) => _tabPageLayer(a).compareTo(_tabPageLayer(b)));
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        for (final page in pageOrder)
+          Positioned.fill(
+            key: ValueKey(page),
+            child: Offstage(
+              offstage:
+                  page != index && (!transitioning || page != previousIndex),
+              child: TickerMode(
+                enabled:
+                    page == index || (transitioning && page == previousIndex),
+                child: IgnorePointer(
+                  ignoring: page != index,
+                  child: SlideTransition(
+                    key: ValueKey('home-tab-slide-$page'),
+                    position: page == index
+                        ? tabIncomingTransition
+                        : page == previousIndex && transitioning
+                        ? tabOutgoingTransition
+                        : const AlwaysStoppedAnimation(Offset.zero),
+                    child: RepaintBoundary(
+                      key: ValueKey('home-tab-paint-$page'),
+                      child: pages[page],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  int _tabPageLayer(int page) {
+    if (transitioning && page == previousIndex) return 1;
+    if (page == index) return 2;
+    return 0;
   }
 
   void sessionChanged() {
@@ -75,12 +162,25 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     widget.site.removeListener(sessionChanged);
+    tabTransitionCurve.dispose();
+    tabTransitionController.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    tabTransitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+      value: 1,
+    )..addStatusListener(_onTabTransitionStatus);
+    tabTransitionCurve = CurvedAnimation(
+      parent: tabTransitionController,
+      curve: Curves.easeOutCubic,
+    );
+    tabIncomingTransition = const AlwaysStoppedAnimation(Offset.zero);
+    tabOutgoingTransition = const AlwaysStoppedAnimation(Offset.zero);
     final session = initialSession = widget.site.syncSession();
     forums = session.then(
       (_) => widget.site.forums(),
@@ -104,57 +204,54 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     extendBody: widget.settings.floating,
-    body: IndexedStack(
-      index: index,
-      children: [
-        if (visited.contains(0))
-          TopicsPage(
-            widget.site,
-            key: feed,
-            root: true,
-            home: true,
-            ensureSessionReady: ensureSessionReady,
-            active: index == 0,
-            floatingNavigation: widget.settings.floating,
-            liquidGlassNavigation: widget.settings.liquidGlass,
-            onOpenForums: () => selectTab(1),
-          )
-        else
-          const SizedBox.shrink(),
-        if (visited.contains(1))
-          ForumsPage(
-            widget.site,
-            key: ValueKey(widget.site.uid),
-            forums: forums,
-            onRefresh: () async {
-              final next = widget.site.forums();
-              setState(() => forums = next);
-              await next;
-            },
-            floatingNavigation: widget.settings.floating,
-            liquidGlassNavigation: widget.settings.liquidGlass,
-          )
-        else
-          const SizedBox.shrink(),
-        if (visited.contains(2))
-          TopicsPage(
-            widget.site,
-            key: guide,
-            root: true,
-            guide: true,
-            floatingNavigation: widget.settings.floating,
-            liquidGlassNavigation: widget.settings.liquidGlass,
-            initialView: 'newthread',
-            title: '导读',
-          )
-        else
-          const SizedBox.shrink(),
-        if (visited.contains(3))
-          MyDashboardPage(widget.site, widget.settings)
-        else
-          const SizedBox.shrink(),
-      ],
-    ),
+    body: _buildTabContent([
+      if (visited.contains(0))
+        TopicsPage(
+          widget.site,
+          key: feed,
+          root: true,
+          home: true,
+          ensureSessionReady: ensureSessionReady,
+          active: index == 0,
+          floatingNavigation: widget.settings.floating,
+          liquidGlassNavigation: widget.settings.liquidGlass,
+          onOpenForums: () => selectTab(1),
+        )
+      else
+        const SizedBox.shrink(),
+      if (visited.contains(1))
+        ForumsPage(
+          widget.site,
+          key: ValueKey(widget.site.uid),
+          forums: forums,
+          onRefresh: () async {
+            final next = widget.site.forums();
+            setState(() => forums = next);
+            await next;
+          },
+          floatingNavigation: widget.settings.floating,
+          liquidGlassNavigation: widget.settings.liquidGlass,
+        )
+      else
+        const SizedBox.shrink(),
+      if (visited.contains(2))
+        TopicsPage(
+          widget.site,
+          key: guide,
+          root: true,
+          guide: true,
+          floatingNavigation: widget.settings.floating,
+          liquidGlassNavigation: widget.settings.liquidGlass,
+          initialView: 'newthread',
+          title: '导读',
+        )
+      else
+        const SizedBox.shrink(),
+      if (visited.contains(3))
+        MyDashboardPage(widget.site, widget.settings)
+      else
+        const SizedBox.shrink(),
+    ]),
     bottomNavigationBar: SizedBox(
       height: widget.settings.floating
           ? 76 + MediaQuery.viewPaddingOf(context).bottom
