@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'dart:typed_data';
 
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
@@ -290,9 +291,12 @@ void main() {
     final to = tester.element(
       find.byKey(const ValueKey('gallery-target-hero')),
     );
+    final flightAnimation = ProxyAnimation(
+      const AlwaysStoppedAnimation<double>(1),
+    );
     final shuttle = forumGalleryFlight(
       from,
-      const AlwaysStoppedAnimation<double>(1),
+      flightAnimation,
       HeroFlightDirection.pop,
       from,
       to,
@@ -302,6 +306,40 @@ void main() {
       find.byKey(const ValueKey('gallery-return-image-plane')),
       findsOneWidget,
     );
+    final painter = tester
+        .widget<CustomPaint>(
+          find.byKey(const ValueKey('gallery-return-image-plane')),
+        )
+        .painter!;
+    Future<Uint8List> paintAtFlightSize(Size size) async {
+      final recorder = ui.PictureRecorder();
+      painter.paint(ui.Canvas(recorder), size);
+      final picture = recorder.endRecording();
+      final pixels = await tester.runAsync(() async {
+        final frame = await picture.toImage(
+          size.width.toInt(),
+          size.height.toInt(),
+        );
+        try {
+          final bytes = await frame.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          );
+          return bytes!.buffer.asUint8List();
+        } finally {
+          frame.dispose();
+        }
+      });
+      picture.dispose();
+      return pixels!;
+    }
+
+    final returningFrame = await paintAtFlightSize(const Size(170, 220));
+    expect(returningFrame[(40 * 170 + 85) * 4 + 2], 0xcc);
+    flightAnimation.parent = const AlwaysStoppedAnimation<double>(0);
+    final reopenedFrame = await paintAtFlightSize(const Size(170, 220));
+    expect(reopenedFrame, orderedEquals(returningFrame));
+    final redirectedFrame = await paintAtFlightSize(const Size(180, 240));
+    expect(redirectedFrame[(40 * 180 + 90) * 4 + 2], 0xcc);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

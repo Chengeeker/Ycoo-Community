@@ -174,8 +174,8 @@ Future<void> openGallery(
   await Navigator.of(context).push(
     PageRouteBuilder<void>(
       opaque: false,
-      transitionDuration: const Duration(milliseconds: 280),
-      reverseTransitionDuration: const Duration(milliseconds: 260),
+      transitionDuration: const Duration(milliseconds: 330),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (_, animation, secondary) => GalleryPage(
         images,
         initial,
@@ -221,12 +221,19 @@ Widget forumGalleryFlight(
 }
 
 class _GalleryImageGeometry {
-  const _GalleryImageGeometry(this.image, this.rect, this.radius, this.fit);
+  const _GalleryImageGeometry(
+    this.image,
+    this.rect,
+    this.radius,
+    this.fit,
+    this.viewportSize,
+  );
 
   final ui.Image image;
   final Rect rect;
   final BorderRadius radius;
   final BoxFit? fit;
+  final Size viewportSize;
 
   static _GalleryImageGeometry? capture(BuildContext context) {
     final root = context.findRenderObject();
@@ -283,6 +290,7 @@ class _GalleryImageGeometry {
           MatrixUtils.transformRect(object.getTransformTo(root), full),
           radius,
           fit,
+          root.size,
         );
         return;
       }
@@ -343,7 +351,18 @@ class _GalleryReturnPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final t = (1 - animation.value).clamp(0.0, 1.0);
+    // A diverted pop→push Hero keeps this shuttle but changes its outer rect.
+    final widthDelta = target.viewportSize.width - source.viewportSize.width;
+    final heightDelta = target.viewportSize.height - source.viewportSize.height;
+    final deltaLengthSquared =
+        widthDelta * widthDelta + heightDelta * heightDelta;
+    final t = deltaLengthSquared > 0.0001
+        ? (((size.width - source.viewportSize.width) * widthDelta +
+                      (size.height - source.viewportSize.height) *
+                          heightDelta) /
+                  deltaLengthSquared)
+              .clamp(0.0, 1.0)
+        : (1 - animation.value).clamp(0.0, 1.0);
     final rect = Rect.lerp(source.rect, target.rect, t)!;
     final radius = BorderRadius.lerp(source.radius, target.radius, t)!;
     canvas.save();

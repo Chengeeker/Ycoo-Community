@@ -545,3 +545,14 @@
 - APK v2 签名验证通过；证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 与指定 BKS 一致。`zipalign -c -P 16 -v 4` 校验成功。
 - 验证完成后删除根目录旧版 APK 及 `previous-releases` 下旧 APK，只保留当前正式包。Gradle 日志位于 `build/logs/release-1.0.4-gallery-glass-transition.log`。
 - 未安装到真机；退场转场的 GPU 帧耗时尚未在设备上测量。
+
+## 1.0.5+33 Hero 反向重开图像定位修复（2026-10-28）
+
+- 对照 Review 3.13.1 历史修复：pop 途中再次 push 时 Flutter 会保留旧 Hero shuttle，但外层 Hero rect 已反向变化；若内部图片仍按首次飞行的动画值插值，图片平面会短暂错到视口左上角。
+- 图片和圆角插值现在由当前 Hero 飞行视口尺寸推导；同尺寸边界保留原动画值兜底。未改路由曲线、Hero tag/起止几何、画布约束或缩放手势。
+- 扩展 `test/gallery_layout_test.dart` 像素回归：固定过期动画值并改变 Hero 视口时，图片像素仍跟随视口；视口不变而旧动画值变化时，像素保持一致。图库定向检查 8/8 通过，`lib/pages/media.dart` 与测试文件定向 analyze 无诊断。
+- 图库打开转场时长设为 330ms，返回保持 200ms；沿用现有淡入曲线及转场实现。
+- 版本升至 `1.0.5+33`。ARM64 Release 构建成功（约 9 分 17 秒）。AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.5` / versionCode `33`、minSdk 24，APK 原生库仅含 `arm64-v8a`。
+- APK：`D:/App/源社区/源社区_v1.0.5.apk`，34,985,289 字节，SHA-256 `795CC4A8B312E3FB2D1AC5346D1C1B9730E0E496D64C4AAA8AF518500CD2A845`，`release.sha256` 已同步。签名 v2 验证通过，证书 SHA-256 与指定 BKS 一致；`zipalign -c -P 16 -v 4` 校验成功。新包核验后删除旧 APK，项目根目录只保留此包。
+- 构建脚本创建嵌套临时盘符被 Windows 拒绝；从已有 `V:` ASCII 映射直接运行 Flutter ARM64 发布构建成功。项目根目录遗留的 Flutter 日志已移至 `build/logs`。
+- 未安装到设备；连续反向开合、330ms 打开时长的实际观感及帧耗时尚未真机验收。
