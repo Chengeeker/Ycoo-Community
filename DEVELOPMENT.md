@@ -1,6 +1,6 @@
 # 源社区开发文档
 
-更新：2026-10-28。当前版本 1.0.0+26，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
+更新：2026-10-28。当前版本 1.0.0+27，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
 
 ## 约束与基线
 
@@ -91,6 +91,7 @@
 - Flutter 3.47.1 的 Gradle 插件在不分 ABI 拆包时会在后续配置中重设 abiFilters，只有 defaultConfig.ndk 的 arm64 设置仍会被覆盖。已在 gradle.properties 设置 disable-abi-filtering=true，让项目的 arm64 过滤生效，并保留 jniLibs 的 ARM32/x86/x86_64 排除规则。最终必须以 APK 的 native-code 和 ZIP 中 lib/ 目录复核，不能只看 Flutter 命令参数。
 - AAPT/zipalign 也不能直接读取本环境中文路径，因此签名和结构检查同样使用 ASCII 映射路径。
 - 切换临时盘符后，旧 flutter_build.d 可能残留已移除盘符的输出，导致 Gradle 创建输出父目录时 parent 为 null。正式脚本只删除本项目生成的该 depfile，再重新构建，不清理源码或全局 Gradle 缓存。
+- PowerShell 直接调用 Gradle 时，带点号的 `-Pflutter-version-name=1.0.0` 需作为单引号字符串传入，否则 PowerShell 会拆分参数，Gradle 报 `Task '.0.0' not found`；该失败发生在打包前，重试时引用完整参数。
 - 在线重复编译在 Java HTTPS 依赖检查中长时间等待；依赖已经完整缓存时，可在映射路径的 android 目录通过 gradlew --offline --console=plain，并明确传入 -Ptarget-platform=android-arm64 等 Flutter 参数构建。不能省略目标架构，不能使用缺失依赖的离线模式冒充构建成功。
 - 原始 BKS 导出的证书 SHA-256：3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975；APK 必须匹配该公开指纹。
 
@@ -486,3 +487,12 @@
 - 直接 Gradle 构建时要同步更新被忽略的 `android/local.properties` 中 `flutter.versionCode`；它会覆盖 pubspec 的 versionCode。首次生成包仍报25，版本校验将其拒收、保留旧 APK；将本机值更新到26后重新构建才交付。正式 Flutter 构建脚本选中的临时 X: 映射被 Windows 拒绝，本次用可用的 V: 映射按项目 ARM64 Gradle 流程完成构建。
 - 版本名保持用户指定的 1.0.0，内部 versionCode 26。AAPT 确认包名 ycoo.net.php、minSdk24、targetSdk36、仅 arm64-v8a；APK v2 签名证书与指定BKS匹配，16 KiB zipalign通过。APK `源社区_v1.0.0.apk`，35409206字节，SHA-256 `07C209D8FC14CA4C5A6F9195FCFDE5764266CEFFA806485AE757F67A8E775EAD`；AOT 中确认包含新的返回画布与缩略图代码。根目录仅保留该最新版，旧APK已替换删除。
 - 最终 APK 尚未安装到真机；真实图片下载时序、Hero 过渡观感、缩放手势和 GPU 绘制仍待设备验收。源码提交不包含 APK、本机签名配置或 `android/local.properties`。
+
+## 1.0.0+27 GreenNote 浅色液态玻璃同步（2026-10-28）
+
+- 只更新可选液态玻璃悬浮底栏的浅色模式：同步 GreenNote 的白色玻璃壳与 rimLight=1、浅色折射选中镜片、白色细描边及主题色选中/未选中图标文字；原有深色参数保持不变。
+- 图片播放器、缩略图连廊、手势与 Hero 转场没有修改。
+- 定向测试覆盖浅色镜片样式和深色回归，2/2 通过；目标文件 `dart analyze --format machine` 通过。
+- 离线 ARM64 正式构建成功。AAPT 确认包名 `ycoo.net.php`、versionName `1.0.0` / versionCode `27`、仅 `arm64-v8a`；APK v2 签名匹配指定 BKS 证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975`，16 KiB zipalign 校验通过。
+- 正式包：`D:/App/源社区/源社区_v1.0.0.apk`，35,409,206 字节，SHA-256 `DD0D7B3CA74215BECA0717964CF77191C751DBCDE397D8B327A7C465291DA3D1`；新包验证通过后已替换根目录旧包。Gradle 日志位于 `build/logs`。
+- 未安装到设备；玻璃效果的实际观感与 GPU 表现仍待真机确认。
