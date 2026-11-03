@@ -5,6 +5,7 @@ import 'package:html/dom.dart' as dom;
 
 import '../data/site.dart';
 import '../data/native_site.dart';
+import '../data/profile.dart' show UserProfile;
 import '../core/design_system/components/review_frosted_app_bar.dart';
 import '../core/widgets/app_section_card.dart';
 import '../core/utils/haptic_feedback_util.dart';
@@ -125,6 +126,55 @@ class _NativeSitePageState extends State<NativeSitePage>
       error = null;
     });
     try {
+      if (isSite(current) &&
+          current.path == '/home.php' &&
+          current.queryParameters['mod'] == 'medal' &&
+          current.queryParameters['action'] == 'log' &&
+          widget.site.loggedIn) {
+        final uid = widget.site.uid;
+        final session = widget.site.sessionEpoch;
+        final data = await widget.site.api(
+          'profile',
+          query: {
+            'uid': uid,
+            '_session': DateTime.now().microsecondsSinceEpoch,
+          },
+        );
+        if (!mounted || ticket != generation) return;
+        if (session != widget.site.sessionEpoch || uid != widget.site.uid) {
+          throw SiteException('账户已变化，请重新打开勋章页面');
+        }
+        final space = data['space'];
+        if (space is! Map || '${space['uid']}' != uid) {
+          throw SiteException('勋章资料与当前账号不匹配，请刷新重试');
+        }
+        final medals = UserProfile(uid, space, const {}, '').medals.map((
+          medal,
+        ) {
+          final source = textOf(medal, 'image');
+          final image = normalizeSiteLink(source);
+          return NativeMedal(
+            textOf(medal, 'name'),
+            source.isNotEmpty && isSite(image) ? image.toString() : '',
+            textOf(medal, 'description'),
+          );
+        }).toList();
+        setState(() {
+          setPage(
+            NativePageData(
+              medals,
+              false,
+              '暂无勋章',
+              tabs: [
+                NativePageTab('勋章中心', siteUri('/home.php?mod=medal&mobile=2')),
+                NativePageTab('我的勋章', current, selected: true),
+              ],
+            ),
+          );
+          busy = false;
+        });
+        return;
+      }
       final uri = current.replace(
         queryParameters: {
           ...current.queryParameters,
@@ -274,15 +324,29 @@ class _NativeSitePageState extends State<NativeSitePage>
 
   @override
   Widget build(BuildContext context) {
-    final tabHeight = (MediaQuery.textScalerOf(context).scale(14) + 28).clamp(
-      48.0,
-      double.infinity,
-    );
     final tabData = page?.tabs ?? const <NativePageTab>[];
+    final equalTaskTabs =
+        isSite(current) &&
+        current.path == '/home.php' &&
+        current.queryParameters['mod'] == 'task' &&
+        tabData.length == 4;
+    final taskLabelSize =
+        Theme.of(context).tabBarTheme.labelStyle?.fontSize ??
+        Theme.of(context).textTheme.titleSmall?.fontSize ??
+        14;
+    final scaledTaskLabel = MediaQuery.textScalerOf(context)
+        .scale(taskLabelSize);
+    final taskLabelLines = scaledTaskLabel / taskLabelSize > 1.5 ? 3 : 2;
+    final tabHeight =
+        (equalTaskTabs
+                ? scaledTaskLabel * 1.2 * taskLabelLines + 16
+                : MediaQuery.textScalerOf(context).scale(14) + 28)
+            .clamp(48.0, double.infinity);
     final scrollTabs =
-        tabData.length > 3 ||
-        MediaQuery.textScalerOf(context).scale(1) > 1.2 ||
-        tabData.any((tab) => tab.label.runes.length > 4);
+        !equalTaskTabs &&
+        (tabData.length > 3 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.2 ||
+            tabData.any((tab) => tab.label.runes.length > 4));
     return Scaffold(
       appBar: widget.embedded
           ? null
@@ -295,11 +359,32 @@ class _NativeSitePageState extends State<NativeSitePage>
                       child: TabBar(
                         controller: tabs,
                         isScrollable: scrollTabs,
-                        tabAlignment: scrollTabs ? TabAlignment.start : null,
+                        tabAlignment: equalTaskTabs
+                            ? TabAlignment.fill
+                            : scrollTabs
+                            ? TabAlignment.start
+                            : null,
+                        labelPadding: equalTaskTabs
+                            ? const EdgeInsets.symmetric(horizontal: 4)
+                            : null,
                         onTap: selectTab,
                         tabs: [
                           for (final tab in tabData)
-                            Tab(height: tabHeight, text: tab.label),
+                            equalTaskTabs
+                                ? Tab(
+                                    height: tabHeight,
+                                    child: Text(
+                                      tab.label,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: taskLabelSize,
+                                        height: 1.2,
+                                      ),
+                                      maxLines: taskLabelLines,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  )
+                                : Tab(height: tabHeight, text: tab.label),
                         ],
                       ),
                     ),
@@ -379,6 +464,30 @@ class _NativeSitePageState extends State<NativeSitePage>
                       form: part,
                       busy: busy,
                       onSubmit: (values) => submit(part, values),
+                    )
+                  else if (part is NativeContact)
+                    ListTile(
+                      leading: SiteAvatar(
+                        uid: part.uid,
+                        name: part.name,
+                        url: part.avatar,
+                        radius: 20,
+                      ),
+                      title: Text(part.name),
+                      subtitle: part.detail.isEmpty ? null : Text(part.detail),
+                      onTap: () =>
+                          push(context, ProfilePage(widget.site, part.uid)),
+                    )
+                  else if (part is NativeMedal)
+                    _MedalTile(
+                      part,
+                      onApply: part.application == null || busy
+                          ? null
+                          : () => openWeb(
+                              context,
+                              part.application!.toString(),
+                              title: '申请勋章',
+                            ),
                     ),
                 if (page != null && page!.parts.isEmpty && !page!.loginRequired)
                   Text(
@@ -388,6 +497,86 @@ class _NativeSitePageState extends State<NativeSitePage>
             ),
     );
   }
+}
+
+class _MedalTile extends StatelessWidget {
+  const _MedalTile(this.medal, {this.onApply});
+  final NativeMedal medal;
+  final VoidCallback? onApply;
+
+  Widget image(double size) => medal.image.isEmpty
+      ? Icon(Icons.workspace_premium_outlined, size: size)
+      : Image.network(
+          medal.image,
+          width: size,
+          height: size,
+          cacheWidth: 144,
+          fit: BoxFit.contain,
+          headers: siteImageHeaders(medal.image),
+          errorBuilder: (_, _, _) =>
+              Icon(Icons.workspace_premium_outlined, size: size),
+        );
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: image(40),
+    title: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(medal.name),
+              if (medal.description.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    medal.description,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (medal.application != null) ...[
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 104,
+            child: FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              onPressed: onApply,
+              child: const Text('立即申请', textAlign: TextAlign.center),
+            ),
+          ),
+        ],
+      ],
+    ),
+    onTap: () => showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        scrollable: true,
+        title: Text(medal.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            image(96),
+            const SizedBox(height: 16),
+            Text(medal.description),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class NativeFormView extends StatefulWidget {

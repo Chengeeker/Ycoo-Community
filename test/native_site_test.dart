@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yuan_community/data/site.dart';
@@ -11,6 +13,9 @@ import 'package:yuan_community/pages/native_site.dart';
 import 'package:yuan_community/pages/native_cloud.dart';
 import 'package:yuan_community/pages/common.dart';
 import 'package:yuan_community/core/design_system/components/review_frosted_app_bar.dart';
+import 'package:yuan_community/core/widgets/app_scope.dart';
+import 'package:yuan_community/settings.dart';
+import 'package:yuan_community/core/theme/app_theme.dart';
 
 const purchaseForm =
     '<div class="comiis_bodybox"><form method="post" action="forum.php?mod=misc&action=pay&tid=31"><input type="hidden" name="formhash" value="abcd1234"><button name="paysubmit" value="yes">确认购买</button></form></div>';
@@ -36,6 +41,40 @@ class TabFixtureSite extends Site {
         '<li><a href="/home.php?mod=space&do=friend&view=visitor">最近来访</a></li>'
         '</ul></div><p>内容 $view</p><div style="display:none">隐藏确认框</div></div>';
     return Response<dynamic>(
+      data: source,
+      requestOptions: RequestOptions(path: path),
+    );
+  }
+}
+
+class AccountPageFixtureSite extends Site {
+  AccountPageFixtureSite(super.prefs, this.source);
+  final String source;
+  int writes = 0;
+  final requests = <Uri>[];
+  Map<String, dynamic>? profile;
+  Future<Map<String, dynamic>>? profileResponse;
+  @override
+  Future<Map<String, dynamic>> api(
+    String module, {
+    Map<String, dynamic> query = const {},
+    Map<String, dynamic>? data,
+  }) async {
+    if (module == 'profile' && profileResponse != null) return profileResponse!;
+    if (module == 'profile' && profile != null) return profile!;
+    throw SiteException('Unexpected API request');
+  }
+
+  @override
+  Future<Response<dynamic>> request(
+    String path, {
+    Map<String, dynamic>? query,
+    Map<String, dynamic>? data,
+    int redirects = 0,
+  }) async {
+    if (data != null) writes++;
+    requests.add(normalizeSiteLink(path));
+    return Response(
       data: source,
       requestOptions: RequestOptions(path: path),
     );
@@ -122,6 +161,321 @@ class NativeFixtureSite extends Site {
 }
 
 void main() {
+  test('medal applications retain verified server links and leave no inline label', () {
+    final source = File('test/fixtures/medal-applications.html')
+        .readAsStringSync();
+    final page = NativePageData.parse(source, siteUri('/home.php?mod=medal'));
+    final medals = page.parts.whereType<NativeMedal>().toList();
+    expect(medals, hasLength(2));
+    expect(
+      medals.map((medal) => medal.application?.queryParameters['medalid']),
+      ['45', '46'],
+    );
+    expect(medals.last.application?.queryParameters['formhash'], 'test0002');
+    expect(page.parts.whereType<String>().join(), isNot(contains('立即申请')));
+    expect(page.hasScriptActions, isFalse);
+    for (final target in [
+      'https://example.com/home.php?mod=medal&amp;action=apply&amp;medalid=45',
+      'https://user@ycoo.net/home.php?mod=medal&amp;action=apply&amp;medalid=45',
+      'home.php?mod=medal&amp;action=apply&amp;medalid=99',
+    ]) {
+      final unsafe = source.replaceFirst(
+        'home.php?mod=medal&amp;action=apply&amp;medalid=45&amp;formhash=test0001',
+        target,
+      );
+      expect(
+        NativePageData.parse(
+          unsafe,
+          siteUri('/home.php?mod=medal'),
+        ).parts.whereType<NativeMedal>().first.application,
+        isNull,
+      );
+    }
+  });
+
+  for (final scale in [1.0, 2.0, 3.0]) {
+    testWidgets(
+      'medal application buttons share a trailing column at scale $scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 1200);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final site = AccountPageFixtureSite(
+          prefs,
+          File('test/fixtures/medal-applications.html').readAsStringSync(),
+        );
+        await tester.pumpWidget(
+          AppScope(
+            site: site,
+            settings: Settings(prefs),
+            child: MaterialApp(
+              theme: AppTheme.lightTheme(),
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: TextScaler.linear(scale)),
+                child: child!,
+              ),
+              home: NativeSitePage(site, '/home.php?mod=medal', title: '勋章中心'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final buttons = find.byType(FilledButton);
+        expect(buttons, findsNWidgets(2));
+        expect(
+          tester.getRect(buttons.first).right,
+          closeTo(tester.getRect(buttons.last).right, .1),
+        );
+        expect(
+          tester.getSize(buttons.first).width,
+          tester.getSize(buttons.last).width,
+        );
+        expect(find.text('立即申请'), findsNWidgets(2));
+        for (final text in find.text('立即申请').evaluate()) {
+          final paragraph = text.renderObject! as RenderParagraph;
+          expect(
+            paragraph.size.height,
+            greaterThanOrEqualTo(
+              paragraph
+                  .getDryLayout(BoxConstraints(maxWidth: paragraph.size.width))
+                  .height,
+            ),
+          );
+        }
+        expect(tester.takeException(), isNull);
+        if (scale == 1) {
+          await tester.tap(buttons.first);
+          await tester.pumpAndSettle();
+          expect(site.requests.last.queryParameters['medalid'], '45');
+          expect(site.requests.last.queryParameters['formhash'], 'test0001');
+          expect(site.writes, 0);
+        }
+      },
+    );
+  }
+  test(
+    'hidden visitor popup handlers do not trigger the unsupported warning',
+    () {
+      final rows = File('test/fixtures/account-user-list.html')
+          .readAsStringSync();
+      final source =
+          '<div class="comiis_bodybox">$rows'
+          '<div id="comiis_followmod" style="display:none">'
+          '<a href="javascript:;" onclick="popup.close();">取消</a>'
+          '<a href="javascript:comiis_list_followmod();">确定</a></div></div>';
+      final base = siteUri('/home.php?mod=space&do=friend&view=visitor');
+      expect(NativePageData.parse(source, base).hasScriptActions, isFalse);
+      final unsupported = source.replaceFirst(
+        '</div></div>',
+        '</div><a href="javascript:newPluginAction()">额外操作</a></div>',
+      );
+      expect(NativePageData.parse(unsupported, base).hasScriptActions, isTrue);
+    },
+  );
+
+  for (final scale in [1.0, 2.0]) {
+    testWidgets('four task tabs fill the bar at scale $scale', (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final source =
+          '<div class="comiis_bodybox"><div class="comiis_topnv"><ul>'
+          '${[
+            for (final label in ['新任务', '进行中的任务', '已完成的任务', '失败的任务']) '<li><a href="/home.php?mod=task">$label</a></li>',
+          ].join()}'
+          '</ul></div><p>任务内容</p></div>';
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: NativeSitePage(
+            AccountPageFixtureSite(prefs, source),
+            '/home.php?mod=task',
+            title: '任务中心',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<TabBar>(find.byType(TabBar)).isScrollable, isFalse);
+      final rect = tester.getRect(find.byType(TabBar));
+      for (var i = 0; i < 4; i++) {
+        expect(
+          tester.getCenter(find.byType(Tab).at(i)).dx,
+          closeTo(rect.left + rect.width * (i + .5) / 4, .1),
+        );
+      }
+      final label = tester.renderObject<RenderParagraph>(find.text('进行中的任务'));
+      expect(
+        label.size.height,
+        greaterThanOrEqualTo(
+          label.getDryLayout(BoxConstraints(maxWidth: label.size.width)).height,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+  testWidgets('medal responses from a previous session cannot be displayed', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final response = Completer<Map<String, dynamic>>();
+    final site = AccountPageFixtureSite(prefs, '')
+      ..uid = '12'
+      ..profileResponse = response.future;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NativeSitePage(
+          site,
+          '/home.php?mod=medal&action=log',
+          title: '我的勋章',
+        ),
+      ),
+    );
+    site.sessionEpoch++;
+    response.complete({
+      'space': {
+        'uid': '12',
+        'medals': [
+          {'name': '旧会话勋章'},
+        ],
+      },
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('旧会话勋章'), findsNothing);
+    expect(find.textContaining('账户已变化'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets(
+    'owned medals use the matching profile and handle empty-string collections',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final data = jsonDecode(
+        File('test/fixtures/user-profile.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
+      final uid = '${(data['space'] as Map)['uid']}';
+      final name = textOf(
+        ((data['space'] as Map)['medals'] as List).first as Map,
+        'name',
+      );
+      final site = AccountPageFixtureSite(prefs, '')
+        ..uid = uid
+        ..profile = data;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: NativeSitePage(
+            site,
+            '/home.php?mod=medal&action=log',
+            title: '我的勋章',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(name), findsOneWidget);
+      expect(find.byType(BrowserPage), findsNothing);
+      (data['space'] as Map)['medals'] = '';
+      await tester.tap(find.byTooltip('刷新'));
+      await tester.pumpAndSettle();
+      expect(find.text('暂无勋章'), findsOneWidget);
+      (data['space'] as Map)['uid'] = 'wrong-account';
+      await tester.tap(find.byTooltip('刷新'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('勋章资料与当前账号不匹配'), findsOneWidget);
+      expect(site.writes, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  test(
+    'account rows become compact native items without interpreting scripts',
+    () {
+      final visitors = NativePageData.parse(
+        File('test/fixtures/account-user-list.html').readAsStringSync(),
+        siteUri('/home.php?mod=space&do=friend&view=visitor'),
+      );
+      final contacts = visitors.parts.whereType<NativeContact>().toList();
+      expect(contacts, hasLength(2));
+      expect(contacts.first.uid, '34254');
+      expect(contacts.first.name, '西瓜霜雪');
+      final medals = NativePageData.parse(
+        File(
+          'test/fixtures/account-medals.html',
+        ).readAsStringSync().replaceFirst(
+          'href="javascript:;"',
+          'href="javascript:;" onclick="popup.open(\'detail\', \'alerts\');"',
+        ),
+        siteUri('/home.php?mod=medal'),
+      );
+      expect(medals.parts.whereType<NativeMedal>(), hasLength(3));
+      expect(medals.hasScriptActions, isFalse);
+      expect(medals.tabs.map((tab) => tab.label), ['勋章中心', '我的勋章']);
+    },
+  );
+
+  testWidgets('visitors, tasks and medals render without a WebView', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final cases = [
+      (
+        '/home.php?mod=space&do=friend&view=visitor',
+        '最近访客',
+        File('test/fixtures/account-user-list.html').readAsStringSync(),
+        '西瓜霜雪',
+      ),
+      (
+        '/home.php?mod=task',
+        '任务中心',
+        '<div class="comiis_bodybox"><h3>测试任务</h3><p>服务器返回的任务说明</p></div>',
+        '测试任务',
+      ),
+      (
+        '/home.php?mod=medal',
+        '我的勋章',
+        File('test/fixtures/account-medals.html').readAsStringSync(),
+        '活跃之星',
+      ),
+    ];
+    for (final (url, title, source, label) in cases) {
+      final site = AccountPageFixtureSite(prefs, source);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: NativeSitePage(site, url, key: ValueKey(url), title: title),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(label), findsOneWidget);
+      expect(find.byType(BrowserPage), findsNothing);
+      if (title == '最近访客') {
+        expect(find.byType(SiteAvatar), findsNWidgets(2));
+        expect(
+          tester.getSize(find.byType(SiteAvatar).first),
+          const Size(40, 40),
+        );
+      }
+      if (title == '我的勋章') {
+        await tester.tap(find.text('活跃之星'));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('在线时间100小时'), findsNWidgets(2));
+        await tester.tap(find.text('关闭'));
+        await tester.pumpAndSettle();
+      }
+      expect(site.writes, 0);
+      expect(tester.takeException(), isNull);
+    }
+  });
   testWidgets('native tabs keep their frosted boundary at large text size', (
     tester,
   ) async {

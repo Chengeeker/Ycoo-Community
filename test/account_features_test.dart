@@ -8,7 +8,11 @@ import 'package:yuan_community/data/site.dart';
 import 'package:yuan_community/pages/account_features.dart';
 import 'package:yuan_community/pages/native_site.dart';
 import 'package:yuan_community/pages/login.dart';
+import 'package:yuan_community/pages/common.dart';
 import 'package:yuan_community/settings.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+
+import 'helpers/fake_webview.dart';
 
 class AccountFixtureSite extends Site {
   AccountFixtureSite(super.prefs) {
@@ -17,6 +21,7 @@ class AccountFixtureSite extends Site {
   }
   final calls = <Uri>[];
   int writes = 0;
+  bool emptyDarkroom = false;
   @override
   Future<Map<String, dynamic>> api(
     String module, {
@@ -60,24 +65,34 @@ class AccountFixtureSite extends Site {
   }) async {
     if (data != null) writes++;
     final uri = normalizeSiteLink(path).replace(
-      queryParameters: query ?? normalizeSiteLink(path).queryParameters,
+      queryParameters: {
+        for (final entry
+            in (query ?? normalizeSiteLink(path).queryParameters).entries)
+          entry.key: '${entry.value}',
+      },
     );
     calls.add(uri);
     dynamic response = '<div class="comiis_bodybox"><p>站点内容</p></div>';
     if (uri.queryParameters['action'] == 'showdarkroom') {
       response = {
-        'message': query?['cid'] == null ? '1|5' : '0|0',
-        'data': {
-          '1': {
-            'cid': query?['cid'] == null ? '8' : '5',
-            'uid': '7',
-            'username': '测试成员',
-            'action': '禁止发言',
-            'reason': '违规',
-            'dateline': '今天',
-            'groupexpiry': '永不过期',
-          },
-        },
+        'message': emptyDarkroom
+            ? '0|1'
+            : query?['cid'] == null
+            ? '1|5'
+            : '0|0',
+        'data': emptyDarkroom
+            ? []
+            : {
+                '1': {
+                  'cid': query?['cid'] == null ? '8' : '5',
+                  'uid': '7',
+                  'username': '测试成员',
+                  'action': '禁止发言',
+                  'reason': '违规',
+                  'dateline': '今天',
+                  'groupexpiry': '永不过期',
+                },
+              },
       };
     } else if (uri.queryParameters['ac'] == 'profile') {
       response = '<div class="comiis_bodybox"><a href="/plugin.php?id=wxbind">微信绑定</a><a href="https://example.com/connect">QQ绑定</a></div>';
@@ -98,6 +113,15 @@ Future<(SharedPreferences, AccountFixtureSite)> setup() async {
 }
 
 void main() {
+  late FakeWebViewPlatform web;
+  setUp(() {
+    final previous = WebViewPlatform.instance;
+    web = FakeWebViewPlatform();
+    WebViewPlatform.instance = web;
+    if (previous != null) {
+      addTearDown(() => WebViewPlatform.instance = previous);
+    }
+  });
   testWidgets('promotion QR encodes the actual account referral URL', (
     tester,
   ) async {
@@ -113,7 +137,7 @@ void main() {
   });
 
   testWidgets(
-    'credits use returned labels and balances, transfer only reads its form',
+    'credits keep native balances and open transfer on the official site',
     (tester) async {
       final (prefs, site) = await setup();
       await tester.pumpWidget(
@@ -129,8 +153,16 @@ void main() {
       expect(find.text('519'), findsOneWidget);
       await tester.tap(find.text('转账'));
       await tester.pumpAndSettle();
+      expect(find.byType(BrowserPage), findsOneWidget);
+      expect(web.controller.loads.single.queryParameters['op'], 'transfer');
+      expect(find.byType(AppBar), findsOneWidget);
+      await tester.tap(find.text('充值'));
+      await tester.pumpAndSettle();
+      expect(web.controller.loads.single.queryParameters['op'], 'buy');
+      await tester.tap(find.text('记录'));
+      await tester.pumpAndSettle();
       expect(find.byType(NativeSitePage), findsOneWidget);
-      expect(site.calls.last.queryParameters['op'], 'transfer');
+      expect(site.calls.last.queryParameters['op'], 'log');
       expect(site.writes, 0);
       expect(tester.takeException(), isNull);
     },
@@ -169,8 +201,8 @@ void main() {
     expect(find.text('好友甲'), findsOneWidget);
     await tester.tap(find.text('好友甲'));
     await tester.pumpAndSettle();
-    expect(site.calls.last.queryParameters['subop'], 'view');
-    expect(site.calls.last.queryParameters['touid'], '7');
+    expect(web.controller.loads.single.queryParameters['subop'], 'view');
+    expect(web.controller.loads.single.queryParameters['touid'], '7');
     expect(site.writes, 0);
   });
 
@@ -189,6 +221,21 @@ void main() {
     expect(find.text('微信绑定'), findsOneWidget);
     expect(find.text('QQ绑定'), findsOneWidget);
     expect(find.text('站点未返回可识别的入口'), findsNothing);
+    expect(find.text('修改头像'), findsNothing);
+    final bindingTile = tester.widget<ListTile>(
+      find.widgetWithText(ListTile, '微信绑定'),
+    );
+    expect(bindingTile.subtitle, isNull, reason: '${site.calls}');
+    expect(bindingTile.onTap, isNotNull);
+    await tester.tap(find.text('微信绑定'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BrowserPage), findsOneWidget);
+    expect(web.controller.loads.single.queryParameters['id'], 'wxbind');
+    await tester.tap(find.byTooltip('关闭页面'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('QQ绑定'));
+    await tester.pumpAndSettle();
+    expect(find.text('即将离开源社区'), findsOneWidget);
     expect(site.writes, 0);
   });
 
@@ -203,6 +250,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(site.calls.last.queryParameters['cid'], '5');
     expect(find.text('测试成员'), findsNWidgets(2));
+    final rows = find.byType(ListTile);
+    expect(
+      tester.getTopLeft(rows.at(1)).dy - tester.getBottomLeft(rows.first).dy,
+      closeTo(8, .1),
+    );
     expect(site.writes, 0);
   });
+
+  testWidgets(
+    'empty darkroom is a completed empty state, not a connection error',
+    (tester) async {
+      final (_, site) = await setup();
+      site.emptyDarkroom = true;
+      await tester.pumpWidget(MaterialApp(home: DarkroomPage(site)));
+      await tester.pumpAndSettle();
+      expect(find.text('暂无记录'), findsOneWidget);
+      expect(find.byType(Failure), findsNothing);
+      expect(find.text('加载更多'), findsNothing);
+      expect(site.writes, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

@@ -21,6 +21,33 @@ import 'package:yuan_community/data/portal.dart';
 import 'package:yuan_community/pages/portal.dart';
 
 void main() {
+  testWidgets('shared press feedback has no animated ripple in either theme', (
+    tester,
+  ) async {
+    for (final theme in [AppTheme.lightTheme(), AppTheme.darkTheme()]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Scaffold(
+            body: TextButton(onPressed: () {}, child: const Text('按住')),
+          ),
+        ),
+      );
+      final context = tester.element(find.text('按住'));
+      final feature = Theme.of(context).splashFactory.create(
+        controller: Material.of(context),
+        referenceBox: tester.renderObject(find.text('按住')),
+        position: Offset.zero,
+        color: Colors.red,
+        textDirection: TextDirection.ltr,
+      );
+      expect(feature, isA<NoSplash>());
+      Material.of(context).addInkFeature(feature);
+      feature.cancel();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+  });
   for (final floating in [true, false]) {
     testWidgets('safe areas are counted once with floating=$floating', (
       tester,

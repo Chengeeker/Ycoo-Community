@@ -11,7 +11,6 @@ import '../data/portal.dart';
 import 'common.dart';
 import 'home.dart' show TopicTile;
 import 'login.dart';
-import 'native_site.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage(this.site, this.uid, {super.key});
@@ -226,10 +225,7 @@ class _ProfilePageState extends State<ProfilePage> {
           return;
         }
       }
-      await push(
-        context,
-        NativeSitePage(widget.site, uri.toString(), title: title),
-      );
+      await openWeb(context, uri.toString(), title: title);
       if (mounted && epoch == widget.site.sessionEpoch) await load();
     } catch (e) {
       if (mounted) feedback(context, e);
@@ -797,10 +793,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                   title: Text(entry.title),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => push(
-                    context,
-                    NativeSitePage(widget.site, entry.url, title: entry.title),
-                  ),
+                  onTap: () => openWeb(context, entry.url, title: entry.title),
                 ),
             if (contentError != null)
               TextButton(

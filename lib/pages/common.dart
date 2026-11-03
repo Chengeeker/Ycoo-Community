@@ -11,7 +11,6 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../core/utils/haptic_feedback_util.dart';
 
-import '../core/design_system/components/review_frosted_app_bar.dart';
 import '../data/site.dart';
 import '../data/profile.dart';
 import 'profile.dart';
@@ -19,7 +18,6 @@ import '../core/widgets/app_scope.dart';
 import 'thread.dart' show routeLink;
 import 'media.dart' show openGallery;
 import 'native_site.dart';
-import 'native_cloud.dart';
 
 Future<T?> push<T>(BuildContext context, Widget page) =>
     Navigator.of(context).push<T>(MaterialPageRoute(builder: (_) => page));
@@ -201,17 +199,20 @@ class BrowserPage extends StatefulWidget {
     this.title = '原站页面',
     this.findOnLoad = false,
     this.previewFile = false,
+    this.embedded = false,
     super.key,
   });
   final String url, title;
   final bool findOnLoad;
   final bool previewFile;
+  final bool embedded;
   @override
   State<BrowserPage> createState() => _BrowserPageState();
 }
 
 class _BrowserPageState extends State<BrowserPage> {
   late final WebViewController controller;
+  late final WebViewWidget webView;
   int progress = 0;
   String? error;
   bool initialFindShown = false;
@@ -298,7 +299,7 @@ class _BrowserPageState extends State<BrowserPage> {
             }
           },
           onProgress: (v) {
-            if (mounted) setState(() => progress = v);
+            if (mounted && progress != v) setState(() => progress = v);
           },
           onPageStarted: (url) {
             if (mounted) {
@@ -348,6 +349,13 @@ class _BrowserPageState extends State<BrowserPage> {
       )
       ..loadRequest(siteUri(widget.url));
     if (controller.platform case final AndroidWebViewController android) {
+      // Native composition avoids texture synchronization during fast scrolling.
+      webView = WebViewWidget.fromPlatformCreationParams(
+        params: AndroidWebViewWidgetCreationParams(
+          controller: android,
+          displayWithHybridComposition: true,
+        ),
+      );
       android.setOnShowFileSelector((params) async {
         HapticFeedbackUtil.light();
         try {
@@ -363,6 +371,8 @@ class _BrowserPageState extends State<BrowserPage> {
           return [];
         }
       });
+    } else {
+      webView = WebViewWidget(controller: controller);
     }
   }
 
@@ -415,86 +425,106 @@ class _BrowserPageState extends State<BrowserPage> {
       }
     },
     child: Scaffold(
-      appBar: ReviewFrostedAppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              currentTitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              Uri.tryParse(currentUrl)?.host ?? currentUrl,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-          ],
-        ),
-        leading: IconButton(
-          tooltip: '关闭页面',
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            tooltip: '刷新',
-            icon: const Icon(Icons.refresh),
-            onPressed: () => controller.reload(),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (v) async {
-              final url =
-                  await controller.currentUrl() ??
-                  siteUri(widget.url).toString();
-              if (v == 'copy') {
-                await Clipboard.setData(ClipboardData(text: url));
-              } else if (v == 'share') {
-                if (context.mounted) await shareText(context, url);
-              } else if (v == 'find') {
-                await findInPage();
-              } else if (v == 'top') {
-                await controller.runJavaScript(
-                  'window.scrollTo({top:0,behavior:"smooth"})',
-                );
-              } else if (v == 'desktop') {
-                final uri = Uri.parse(url);
-                await controller.setUserAgent(siteUserAgent);
-                await controller.loadRequest(
-                  uri.replace(
-                    queryParameters: {...uri.queryParameters, 'mobile': 'no'},
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    currentTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                );
-              } else if (v == 'download') {
-                if (context.mounted) await showDownloadDialog(context, url);
-              } else {
-                await launchUrl(
-                  Uri.parse(url),
-                  mode: LaunchMode.externalApplication,
-                );
-              }
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'copy', child: Text('复制链接')),
-              const PopupMenuItem(value: 'external', child: Text('在浏览器打开')),
-              const PopupMenuItem(value: 'share', child: Text('分享网页')),
-              const PopupMenuItem(value: 'find', child: Text('网页查找')),
-              const PopupMenuItem(value: 'top', child: Text('回到顶部')),
-              const PopupMenuItem(value: 'desktop', child: Text('电脑版')),
-              const PopupMenuItem(value: 'download', child: Text('下载当前链接')),
-            ],
-          ),
-        ],
-      ),
+                  Text(
+                    Uri.tryParse(currentUrl)?.host ?? currentUrl,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ],
+              ),
+              leading: IconButton(
+                tooltip: '关闭页面',
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+              actions: [
+                IconButton(
+                  tooltip: '刷新',
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => controller.reload(),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (v) async {
+                    final url =
+                        await controller.currentUrl() ??
+                        siteUri(widget.url).toString();
+                    if (v == 'copy') {
+                      await Clipboard.setData(ClipboardData(text: url));
+                    } else if (v == 'share') {
+                      if (context.mounted) await shareText(context, url);
+                    } else if (v == 'find') {
+                      await findInPage();
+                    } else if (v == 'top') {
+                      await controller.runJavaScript(
+                        'window.scrollTo({top:0,behavior:"smooth"})',
+                      );
+                    } else if (v == 'desktop') {
+                      final uri = Uri.parse(url);
+                      await controller.setUserAgent(siteUserAgent);
+                      await controller.loadRequest(
+                        uri.replace(
+                          queryParameters: {
+                            ...uri.queryParameters,
+                            'mobile': 'no',
+                          },
+                        ),
+                      );
+                    } else if (v == 'download') {
+                      if (context.mounted) {
+                        await showDownloadDialog(context, url);
+                      }
+                    } else {
+                      await launchUrl(
+                        Uri.parse(url),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'copy', child: Text('复制链接')),
+                    const PopupMenuItem(
+                      value: 'external',
+                      child: Text('在浏览器打开'),
+                    ),
+                    const PopupMenuItem(value: 'share', child: Text('分享网页')),
+                    const PopupMenuItem(value: 'find', child: Text('网页查找')),
+                    const PopupMenuItem(value: 'top', child: Text('回到顶部')),
+                    const PopupMenuItem(value: 'desktop', child: Text('电脑版')),
+                    const PopupMenuItem(
+                      value: 'download',
+                      child: Text('下载当前链接'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
       body: Column(
         children: [
           if (progress < 100) LinearProgressIndicator(value: progress / 100),
           Expanded(
             child: error == null
-                ? WebViewWidget(controller: controller)
+                ? webView
                 : Failure(error!, () => controller.reload()),
           ),
         ],
@@ -596,11 +626,11 @@ Future<void> openWeb(
   final isAuthentication =
       uri.path == '/member.php' &&
       ['logging', 'register'].contains(uri.queryParameters['mod']);
-  if (!forceWeb && site != null && isSite(uri) && !isAuthentication) {
-    if (uri.queryParameters['id'] == 'bphp_clouds:index') {
-      await push(context, NativeCloudPage(site));
-      return;
-    }
+  if (!forceWeb &&
+      site != null &&
+      isSite(uri) &&
+      !isAuthentication &&
+      !requiresSiteWebView(uri)) {
     final sign =
         uri.path == '/k_misign-sign.html' ||
         uri.queryParameters['id'] == 'k_misign:sign';

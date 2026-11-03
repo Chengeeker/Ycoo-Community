@@ -5,6 +5,7 @@ import 'package:html/parser.dart' as html;
 
 import 'site.dart';
 import 'portal.dart';
+import 'profile.dart' show nativeUserProfileId;
 
 class NativeForm {
   NativeForm(this.element, this.action, this.method);
@@ -54,6 +55,22 @@ class NativePageTab {
   final String label;
   final Uri? uri;
   final bool selected;
+}
+
+class NativeContact {
+  const NativeContact(this.uid, this.name, this.avatar, this.detail);
+  final String uid, name, avatar, detail;
+}
+
+class NativeMedal {
+  const NativeMedal(
+    this.name,
+    this.image,
+    this.description, {
+    this.application,
+  });
+  final String name, image, description;
+  final Uri? application;
 }
 
 class NativePageData {
@@ -208,6 +225,97 @@ class NativePageData {
     )) {
       node.remove();
     }
+    final structured = <Element, Object>{};
+    final accountPage = isSite(base) && base.path == '/home.php';
+    if (accountPage &&
+        base.queryParameters['mod'] == 'space' &&
+        base.queryParameters['do'] == 'friend' &&
+        base.queryParameters['view'] == 'visitor') {
+      for (final row in root.querySelectorAll('.comiis_userlist01 li')) {
+        final link = row.querySelector('.tit a[href]');
+        final uid = nativeUserProfileId(
+          normalizeSiteLink(link?.attributes['href'] ?? ''),
+        );
+        final name = link?.text.trim() ?? '';
+        if (uid == null || name.isEmpty) continue;
+        final avatar =
+            row.querySelector('img.user_avatar')?.attributes['src'] ?? '';
+        final avatarUri = normalizeSiteLink(avatar);
+        structured[row] = NativeContact(
+          uid,
+          name,
+          avatar.isNotEmpty && isSite(avatarUri) ? avatarUri.toString() : '',
+          row
+                  .querySelector('.txt')
+                  ?.text
+                  .trim()
+                  .replaceAll(RegExp(r'\s+'), ' ') ??
+              '',
+        );
+      }
+    }
+    if (accountPage && base.queryParameters['mod'] == 'medal') {
+      for (final row in root.querySelectorAll('.comiis_medal_box li')) {
+        final image = row.querySelector('[id^="medal_"] img');
+        final name = row.querySelector('.tit')?.text.trim() ?? '';
+        if (image == null || name.isEmpty) continue;
+        Uri? application;
+        for (final link in row.querySelectorAll('a[href]')) {
+          if (link.text.trim() != '立即申请') continue;
+          final href = link.attributes['href'] ?? '';
+          final candidates = [
+            href,
+            ...RegExp(r'''['"]([^'"]*home\.php\?[^'"]+)['"]''')
+                .allMatches('${link.attributes['onclick'] ?? ''} $href')
+                .map((match) => match[1]!),
+          ];
+          for (final value in candidates) {
+            if (value.isEmpty || value.startsWith('#')) continue;
+            final parsed = Uri.tryParse(value);
+            if (parsed == null) continue;
+            final target = normalizeSiteLink(
+              base.resolveUri(parsed).toString(),
+            );
+            if (!isSite(target) ||
+                target.path != '/home.php' ||
+                target.queryParameters['mod'] != 'medal' ||
+                target.queryParameters['action']?.isNotEmpty != true)
+              continue;
+            final id = row
+                .querySelector('[id^="medal_"]')
+                ?.id
+                .replaceFirst('medal_', '');
+            if (target.queryParameters['medalid'] != null &&
+                target.queryParameters['medalid'] != id)
+              continue;
+            application = target;
+            break;
+          }
+          if (application == null) continue;
+          final parent = link.parent;
+          link.remove();
+          if (parent != null &&
+              parent.text.trim().isEmpty &&
+              parent.children.isEmpty)
+            parent.remove();
+          break;
+        }
+        final source = image.attributes['src'] ?? '';
+        final imageUri = normalizeSiteLink(source);
+        structured[row] = NativeMedal(
+          name,
+          source.isNotEmpty && isSite(imageUri) ? imageUri.toString() : '',
+          row.querySelector('.txt')?.text.trim() ?? '',
+          application: application,
+        );
+      }
+    }
+    final structuredParents = <Node>{};
+    for (final row in structured.keys) {
+      for (Node? parent = row.parent; parent != null; parent = parent.parent) {
+        structuredParents.add(parent);
+      }
+    }
     final parts = <Object>[];
     final buffer = StringBuffer();
     void flush() {
@@ -218,7 +326,20 @@ class NativePageData {
     }
 
     void walk(Node node) {
-      if (node is Element && node.localName == 'form') {
+      final item = structured[node];
+      if (item != null) {
+        flush();
+        parts.add(item);
+        if (item is NativeMedal && node is Element) {
+          for (final child in node.children) {
+            if (!child.classes.any(
+              const {'list02_limg', 'tit', 'txt'}.contains,
+            )) {
+              walk(child);
+            }
+          }
+        }
+      } else if (node is Element && node.localName == 'form') {
         flush();
         final target = base.resolve(
           node.attributes['action']?.isNotEmpty == true
@@ -234,7 +355,9 @@ class NativePageData {
             ),
           );
         }
-      } else if (node is Element && node.querySelector('form') != null) {
+      } else if (node is Element &&
+          (node.querySelector('form') != null ||
+              structuredParents.contains(node))) {
         for (final child in node.nodes) {
           walk(child);
         }
@@ -251,13 +374,28 @@ class NativePageData {
       }
     }
     flush();
+    final visibleScriptActions = root
+        .querySelectorAll('[onclick],a[href^="javascript:"]')
+        .toSet();
     return NativePageData(
       parts,
       login,
       root.querySelector('#messagetext,.comiis_password_top')?.text.trim() ??
           '',
       adaptationInfo: info,
-      hasScriptActions: scriptActions.isNotEmpty,
+      hasScriptActions: scriptActions.any((node) {
+        if (!visibleScriptActions.contains(node)) return false;
+        Object? row;
+        for (Node? parent = node; parent != null; parent = parent.parent) {
+          row = structured[parent];
+          if (row != null) break;
+        }
+        return row is! NativeContact &&
+            !(row is NativeMedal &&
+                (node.attributes['onclick'] ?? '').trim().startsWith(
+                  'popup.open(',
+                ));
+      }),
       tabs: tabs,
     );
   }

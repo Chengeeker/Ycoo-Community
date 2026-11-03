@@ -41,6 +41,88 @@ void main() {
           (call) async => call.method == 'getCookies' ? '' : null,
         );
   });
+  test(
+    'darkroom numeric-key response is not misreported as a network failure',
+    () async {
+      final source = File('test/fixtures/darkroom-response.txt')
+          .readAsStringSync();
+      site.dio.httpClientAdapter = Adapter(
+        (options) async => ResponseBody.fromString(
+          source,
+          200,
+          headers: {
+            'content-type': ['application/json; charset=utf-8'],
+          },
+        ),
+      );
+      final response = await site.request(
+        '/forum.php',
+        query: {'mod': 'misc', 'action': 'showdarkroom', 'ajaxdata': 'json'},
+      );
+      expect(response.data, source);
+      final (rows, next) = await site.darkroom();
+      expect(rows, hasLength(8));
+      expect(rows.first['username'], 'Archive');
+      expect(rows.first['action'], '禁止发言');
+      expect(next, '4833');
+    },
+  );
+  test(
+    'darkroom normalization preserves quoted reason text and escapes',
+    () async {
+      const reason = '原因 {123: 和 "引号" 以及 \\ 路径';
+      final source = jsonEncode({
+        'message': '0|0',
+        'data': {
+          '7': {'cid': '9', 'reason': reason},
+        },
+      }).replaceFirst('"7":', '7:');
+      site.dio.httpClientAdapter = Adapter(
+        (_) async => ResponseBody.fromString(
+          source,
+          200,
+          headers: {
+            'content-type': ['application/json'],
+          },
+        ),
+      );
+      final (rows, next) = await site.darkroom();
+      expect(rows.single['reason'], reason);
+      expect(next, isNull);
+    },
+  );
+  test('darkroom accepts the real empty-array last page and rejects malformed data', () async {
+    for (final source in [
+      '{"message":"0|1","data":[]}',
+      '{"message":"0|0","data":{"7":}}',
+    ]) {
+      site.dio.httpClientAdapter = Adapter(
+        (_) async => ResponseBody.fromString(
+          source,
+          200,
+          headers: {
+            'content-type': ['application/json'],
+          },
+        ),
+      );
+      if (source.contains('[]')) {
+        final (rows, next) = await site.darkroom(cursor: '1');
+        expect(rows, isEmpty);
+        expect(next, isNull);
+      } else {
+        await expectLater(
+          site.darkroom(),
+          throwsA(
+            isA<SiteException>().having(
+              (error) => error.message,
+              'message',
+              contains('格式异常'),
+            ),
+          ),
+        );
+      }
+    }
+  });
   test('real guide and portal preserve full title and pagination', () {
     final guide = Site.parseGuide(
       File('test/fixtures/guide.html').readAsStringSync(),

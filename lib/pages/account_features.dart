@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as html;
@@ -168,7 +166,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final entries = <(String, IconData, String)>[
-      ('修改头像', Icons.add_a_photo_outlined, '/home.php?mod=spacecp&ac=avatar'),
       ('资料修改', Icons.badge_outlined, '/home.php?mod=spacecp&ac=profile'),
       (
         '密码安全',
@@ -212,6 +209,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                             context,
                             bindings[label].toString(),
                             title: label,
+                            forceWeb: isSite(bindings[label]!),
                           ),
                   ),
               ],
@@ -360,6 +358,13 @@ class _CreditsPageState extends State<CreditsPage> {
                   );
                 },
               )
+            : index == 1 || index == 2
+            ? BrowserPage(
+                '/home.php?mod=spacecp&ac=credit&op=${operations[index]}&mobile=2',
+                key: ValueKey('credit-${widget.site.uid}-$index'),
+                title: tabs[index],
+                embedded: true,
+              )
             : NativeSitePage(
                 widget.site,
                 '/home.php?mod=spacecp&ac=credit&op=${operations[index]}',
@@ -471,24 +476,9 @@ class _DarkroomPageState extends State<DarkroomPage> {
       error = null;
     });
     try {
-      final response = await widget.site.request(
-        '/forum.php',
-        query: {
-          'mod': 'misc',
-          'action': 'showdarkroom',
-          'ajaxdata': 'json',
-          if (!refresh && cursor != null) 'cid': cursor,
-        },
+      final (batch, next) = await widget.site.darkroom(
+        cursor: refresh ? null : cursor,
       );
-      final body = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
-      if (body is! Map || body['data'] is! Map)
-        throw SiteException('无法读取小黑屋记录');
-      final batch = (body['data'] as Map).values.whereType<Map>().toList();
-      final next = RegExp(r'^1\|(\d+)$')
-          .firstMatch('${body['message'] ?? ''}')
-          ?.group(1);
       if (!mounted) return;
       setState(() {
         if (refresh) rows.clear();
@@ -532,6 +522,7 @@ class _DarkroomPageState extends State<DarkroomPage> {
               if (rows.isEmpty) const Center(child: Text('暂无记录')),
               for (final row in rows)
                 AppSectionCard(
+                  margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: SiteAvatar(
                       uid: '${row['uid'] ?? ''}',

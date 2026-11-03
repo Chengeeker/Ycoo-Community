@@ -1,6 +1,6 @@
 # 源社区开发文档
 
-更新：2026-10-28。当前版本 1.0.4+32，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
+更新：2026-11-03。当前版本 1.2.8+45，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
 
 ## 约束与基线
 
@@ -10,7 +10,7 @@
 - 直接迁移 AppTheme、HapticFeedbackUtil、ReviewFrostedAppBar、ReviewPageScaffold、ReviewCard、ReviewPreferenceTile、ReviewSwitchTile、ReviewChoiceTile、AppSectionCard。导航保留标准 M3 分支并复用 Review 的可选液态玻璃悬浮栏实现；第三方包及许可文件保存在 packages/liquid_glass_widgets。
 - BKS 为用户指定的 本地 BKS 文件（不随仓库发布）；密码只在被忽略的本机签名配置中使用，不写入文档或受版本管理的源码。签名中间文件排除版本管理；禁止回退 debug 签名。
 - 图标使用站点原始文件，不裁切、不重新绘制、不缩放源图；Android 启动器的系统遮罩不由应用控制。
-- 正式 APK 构建通过包名、ABI、签名和对齐校验后，只保留项目根目录的最新版本 APK；清理项目根目录其他 APK 及 previous-releases 下的旧 APK。校验失败时不执行旧包清理。构建脚本日志存放于 build/logs，项目根目录不留日志文件。
+- 正式 APK 构建通过包名、ABI、Flutter 资源、完整图标字体、签名和对齐校验后，只保留项目根目录的最新版本 APK；清理项目根目录其他 APK 及 previous-releases 下的旧 APK。校验失败时不执行旧包清理。构建脚本日志存放于 build/logs，项目根目录不留日志文件。
 
 ## 实施清单（实现状态；账户和真机验收另列）
 
@@ -695,3 +695,144 @@
 - 按用户请求提交深色灰玻璃/主题色选中态与深浅色按住/拖动水珠修复；仅涉及共享导航组件、对应回归、1.2.4版本信息、公开开发记录与正式包校验值。图片播放器及玻璃库源码未变。
 - 沿用已完成的17项导航相关回归、模式切换/销毁补充检查和目标静态分析；本次推送不改程序内容，不重复构建已核验的正式包。APK、签名、配置、日志及回退快照均留在本地。
 - 普通fast-forward推送main，不改写旧历史；未做真机GPU折射或连续触控验收。
+
+## 1.2.5+42 繁星开通使用原站流程（2026-11-03）
+
+- 用户反馈“我的 → 繁星开通”不可用，并提供 https://ycoo.net/plugin.php?id=boan_group&frame=yes。旧入口带 mobile=2，统一 openWeb 又将该插件送入 NativeSitePage；通用 HTML/表单渲染不执行插件 JavaScript，不能据内容出现就判断完整交互可用。新增路由回归在修改前已复现该地址错误进入 NativeSitePage。
+- 在共享 openWeb 中精确识别同源 /plugin.php、id=boan_group，直接交给现有 BrowserPage；“我的”使用用户提供的地址，不再额外添加 mobile=2。帖子/签到等处已有 mobile=2 的同插件链接同样走内置浏览器，其他插件及原生帖子/资料路由保留。复用既有系统 WebView Cookie、移动 UA、脚本对话框和错误/重试，不额外请求登录、不转交账号 Cookie 给外部浏览器，也不重建或自动提交开通表单。
+- 当前只读现场核对：移动 UA 访问提供的 URL 返回移动登录页；桌面 UA 返回“请先登录”提示。没有登录后的插件页面/支付样本，因此选择用户允许的直接跳转，不推测开通接口或原生重写支付。该结果仅证明游客访问的登录要求，不证明登录后购买可用。
+- 版本、关于、README、功能对照与两份开发记录同步 1.2.5+42。修改前完整源码保存在 build/rollback/star-membership-1.2.4-source.zip（基线 d51d8bd），原签名旧包保存在 build/rollback/star-membership-1.2.4.apk，供回退。
+- 新增回归覆盖原始/移动/乱序参数链接、非目标插件与路径隔离、“我的”游客登录门槛及已登录后打开的精确地址。路由测试只捕获实际目标页面，不启动模拟 WebView，不把该测试当作网页或真机验收。定向验证及正式 ARM64 包核验见下方。
+
+### 1.2.5 定向验证
+
+- link_routing / my_dashboard / native_site 三个文件共 23/23 项通过，日志 build/logs/test-1.2.5-membership.log；包含繁星原站路由及游客门槛、非目标插件保持原生、原生主题购买取消/失败/变价/防重复等既有回归。捕获目标路由的测试没有启动 Android WebView。
+- Dart 对 common.dart、home.dart 和路由测试的定向分析无 error/warning；home.dart 的 11 项既有风格 info 保留，测试辅助 Navigator 改为私有类以免新增公开组件 key 提示。
+- Windows 中文工作路径再次触发既有 Impeller shader include 编码问题；从已经存在且核对指向本项目的 V: 映射运行后通过，未改第三方 shader。构建继续使用正式脚本的 ASCII 映射流程。测试滚动后需 pumpAndSettle 完成布局再点击，不能对仍在屏外的入口作无效点击并误判业务失败。
+- ADB 当前存在无线连接设备；本次未安装、未操作设备或用户账号，登录后开通/付款和系统 WebView 视觉仍未实测。
+### 1.2.5 发布资源异常与防回归
+
+- 首次正式脚本报告构建成功（422.1 秒），包名/ARM64/签名/对齐均通过，但额外 ZIP 核验发现 APK 完全缺少 assets/flutter_assets；磁盘对应 release/flutter_assets 仅剩空目录。该包 35,116,361 字节，被拒绝交付并移至 build/rejected/membership-1.2.5-no-assets.apk。已从回退恢复有效的 1.2.4 根目录 APK 和校验值，确保重建失败时也保留可用包。
+- 本次先在既有 V: 映射测试，又由 V: 脚本创建临时 X: 映射；构建依赖文件中混用物理 D: 与 X: 路径。当前证据不足以断言是哪一项工具缓存导致资源消失，不把签名有效或 Gradle 成功等同于包内容完整。只清理失败版本的 build/app/intermediates/flutter/release 和对应 .dart_tool/flutter_build/3d6fdde7bb4da44d68aa5e88ab9dcbb1，不清理全局缓存、源码或回退。
+- 发布脚本新增 Assert-FlutterAssets：交付/清理旧包前检查非空 AssetManifest.bin，并将 APK MaterialIcons 字体长度与当前 Flutter SDK 原始字体比较。用完整 1.2.4 包和实际缺资源的失败包验证，前者通过、后者明确拒绝。该检查避免以后再次出现“签名/ABI 正常但资源为空”仍删除旧包的情况。
+- 按已有打包复盘，后续从同一个 ASCII 映射目录以 Java 17、离线 Gradle assembleRelease、明确 android-arm64 与 tree-shake-icons=false 重建，避免嵌套映射和不必要的依赖检查；交付仍执行相同包名、版本、架构、资源、证书、对齐及哈希检查。
+- 离线首次重建进一步明确报错：build_hooks 仍试图创建已经撤销的 X: 根目录；本项目 .dart_tool/hooks_runner/objective_c/.../input.json 中确有 X: 绝对路径。仅删除 release 输出及一个 build ID 不足以清理该缓存。本次已清理本项目 .dart_tool/hooks_runner 与 .dart_tool/flutter_build，并在同一 V: 目录重新 pub get --offline 后重建；未更新锁定依赖或删除全局 Pub/Gradle 缓存。该错误证明旧盘符缓存存在，但不单独证明首次资源丢失的全部原因。
+
+### 1.2.5 最终发布校验
+
+- 同一 V: ASCII 路径、Java 17、离线 Gradle assembleRelease 最终构建成功（56.6 秒），日志 build/logs/release-1.2.5-membership-offline-final.log；明确 android-arm64、版本 1.2.5 / code 42、tree-shake-icons=false，未生成 debug 或其他包名的安装包。
+- 已用发布脚本新增资源断言再次检查最终包：assets/flutter_assets 共 14 项，AssetManifest.bin 存在且非空；MaterialIcons 完整字体 1,645,184 字节，与 SDK 原字体一致。此前的缺资源包未交付。
+- AAPT：包名 ycoo.net.php、versionName 1.2.5、versionCode 42、minSdk 24、targetSdk 36、非 debuggable；APK ZIP 原生库仅 arm64-v8a。APK v2 签名验证通过，证书 SHA-256 为 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975，匹配原 BKS；16 KiB zipalign 检查通过。
+- 正式包：源社区_v1.2.5.apk，36,086,014 字节；SHA-256 A7E17A1803D0094A62878DFA49531A54D8F84FED4292CC54D95807F69E072A57。构建产物与交付文件哈希一致，release.sha256 同步；完整验证后删除根目录旧包，仅保留 1.2.5。有效 1.2.4 APK 与源码仍保存在 build/rollback；构建/分析/测试日志统一存 build/logs。
+- 23 项定向回归通过；common.dart、home.dart 与路由测试分析无 error/warning，仅 home.dart 11 项既有风格 info。发布脚本经 PowerShell AST 解析无错误，资源断言用有效旧包、实际缺资源包及最终完整包检验，正确接受/拒绝。
+- 没有安装到设备、使用真实账号开通或付款，也没有自动提交/推送源码；实际系统 WebView 登录保持、登录后的插件交互和付款仍需手机验收。
+
+
+## 1.2.6+43 网页滚动与“我的”功能完整性（2026-11-03）
+
+- 用户明确“长按水波纹”指普通按钮按压涟漪。本次不改液态玻璃底栏长按水珠逻辑，沿用 1.2.4 的导航交互。修改前工作区已有未提交 1.2.5 内容，已保留；对应源码快照在 build/rollback/web-my-pages-1.2.5-source.zip，原签名 1.2.5 APK 在 build/rollback/web-my-pages-1.2.5.apk。
+- WebView Android 4.14.1 默认 Texture Layer Hybrid Composition。Flutter 官方说明该模式快速滚动可能卡顿（https://docs.flutter.dev/platform-integration/android/platform-views）；插件文档说明原生 Hybrid Composition 有 Flutter 侧性能权衡（https://pub.dev/packages/webview_flutter_android）。BrowserPage 现在显式使用 Android 原生合成，仅作用于网页宿主；顶栏改为实色 AppBar，移除不承载正文的 sigma=20 模糊；WebViewWidget 在 State 初始化后复用，重复进度值不再触发 setState。没有启用要求 Android 14+/Vulkan 的实验性 HCPP，没有全局降低刷新率或改网站脚本。
+- 当前设备安装 1.2.5，系统 WebView 为 158.0.8127.2；读取 gfxinfo 返回应用处于后台 frozen，不能据此测量繁星页面帧率或断言全部卡顿来自客户端。上述是已确认的宿主合成/绘制路径优化；官网页面脚本、实际高刷表现和切换合成方式的设备收益仍需前台实测。
+
+### “我的”逐项审计与路由（1.2.6；访客/任务/勋章由1.2.7纠正）
+
+| 入口/功能 | 处理 | 当前实现依据与边界 |
+| --- | --- | --- |
+| 头像/我的空间、个人资料展示、个人帖子分栏 | 保留专用原生主页 | 已有 API + 匹配 UID 的公开页面模型、布局及账号隔离回归 |
+| 我的帖子、我的收藏 | 保留原生列表 | 已有真实模块、帖子链接与权限处理 |
+| 我的好友、日志、相册、圈子、心情、最近访客、粉丝 | 官网 | 此前只是通用 HTML/表单；无法完整保留社交弹层、评论/编辑、上传与管理脚本 |
+| 消息分类与私信列表 | 保留原生入口/列表 | 已有独立列表和分类；私信会话/发送页面改为官网，保留站点完整编辑与消息流程 |
+| 资料设置菜单 | 保留原生菜单，内部资料/密码安全/认证/头像/绑定走官网 | 条件字段、验证、裁剪上传及 OAuth 不以通用表单冒充完整支持；绑定地址仍从服务器发现，站外绑定保留离站确认 |
+| 最近访客、邀请、繁星、任务、勋章、道具、空间背景 | 官网 | 旧页面依赖插件或 Discuz 脚本/异步操作；保留原站完整流程 |
+| 积分“我的”与“记录” | 保留原生 | 余额和币种来自已核实的账户 profile；记录保留原有只读渲染 |
+| 积分转账/充值 | 官网，嵌入原有分栏 | 校验、确认、支付流程交由站点；不自动提交、不保留重复顶栏 |
+| 推广二维码、小黑屋 | 保留原生 | 已有 UID 推广编码和真实服务端记录解析 |
+| 个性化、历史、夜间模式、设置/缓存/自动签到 | 保留原生 | 本地设置和已有专用业务逻辑，无需网页 |
+| 社区服务：签到/排行、标签等普通只读列表 | 保留原生 | 已有专用签到与排行或只读内容解析，未据此宣称所有登录业务已实测 |
+| 社区服务：农场、云盘、圈子、淘专辑 | 官网 | 独立游戏、Vue/第三方存储上传或完整管理操作不能由通用解析器提供；既有基础原生云盘代码保留，默认入口改为官网 |
+| 门户原站、电脑版、注册/验证 | 官网 | 明确选择原站/电脑版时不再被通用原生页面强制加 mobile=2；注册/验证沿用原站 |
+
+- 共用 requiresSiteWebView 精确匹配 https://ycoo.net:443、无 userinfo、路径和业务参数，不对所有插件或任意包含同名字符串的链接一刀切。普通通知、积分记录、原生帖子/用户主页、已完成的关注/好友/招呼/拉黑确认及主题购买保留；ProfilePage 的内容详情和动作统一调用既有 openWeb，以避免直接构造 NativeSitePage 绕过新路由。BrowserPage 继续共享系统 Cookie、保留协议/来源限制、错误重试和用户确认；不读取或导出账号凭据。
+- 普通按钮的 HapticSplashFactory 改为 NoSplash 的子类，不再创建 InkSplash 的扩散/淡出动画；仍在 confirm 时触发已有全局触感，沿用防重复、关闭开关和取消手势不振动的规则。保留静态按压/焦点反馈，无须逐个按钮加覆盖配置。
+- 回归采用安装依赖提供的 WebView 平台接口假实现，检验 Android 合成参数、WebView 实例稳定、内嵌页面不重复顶栏、错误重试和非法 URL 拒绝；不以这些组件检查冒充真机网页 FPS。新增路由完整矩阵、外域/端口/userinfo 隔离、积分分栏及绑定站外确认检查，保留个人主页/触感/主题购买等定向回归；结果与 APK 校验完成后补充。
+
+
+### 1.2.6 定向验证与复盘
+
+- browser / link_routing / account_features / profile / ui_regression / native_site 六个定向文件共 58/58 项通过，日志 build/logs/test-1.2.6-web.log。涵盖原生合成参数、同一 WebViewWidget 实例、无 BackdropFilter、内嵌官网单顶栏、错误重试、非法协议拒绝、全部官网路由和伪装地址隔离，以及积分余额/记录、私信收件人、绑定站外确认、普通按钮无涟漪/触感去重与取消不振动、主页/原生购买等原有回归。
+- 原绑定入口测试只断言标签出现，未发现假 Site 将整数 mobile=2 直接传给 Uri.replace 后抛异常，页面实际停留在“读取失败，点击重试”。本次让假请求按真实 Dio 的查询参数编码规则转为字符串，并明确断言已取得可点击入口、同源打开官网、站外显示离站确认；不是将业务失败改成成功。
+- WebViewPlatform 的 setter 不允许设回 null；假平台仅在原平台非空时恢复。NoSplash 的手工生命周期测试需先向 Material 注册再取消，真实按钮手势已有独立回归。测试工具误用不修改生产业务以迁就测试。
+- 必要静态分析和包体核验结果在正式构建后补充。版本、关于、README、功能对照和两份开发文档同步 1.2.6+43。回退快照包含当前修改前的所有受影响文件，保留 1.2.5 未提交源改动；不自动提交或推送。
+
+- 离线打包复盘：本机 Flutter Gradle 插件实际从 android/local.properties 的 flutter.versionName / flutter.versionCode 读取版本，-Pflutter-version-name / -Pflutter-version-code 并不能替代这两个值。首轮 1.2.6 源码构建的 Manifest 仍为 1.2.5+42，被额外版本核验拒绝交付；已只同步被忽略的 local.properties 至 1.2.6 / 43 后重打包。以后手动离线构建必须先按 pubspec 同步这两项，最后仍以 AAPT 结果为准；正常 flutter build 会自行同步。没有改变包名、签名或升级依赖。
+
+
+### 1.2.6 最终发布校验
+
+- 最终离线 Gradle assembleRelease 构建成功（38.1 秒），日志 build/logs/release-1.2.6-web-final.log。AAPT 确认包名 ycoo.net.php、versionName 1.2.6、versionCode 43、minSdk 24、targetSdk 36、非 debuggable；APK ZIP 原生库仅 arm64-v8a。未生成其他 ABI、debug 签名或其他包名的安装包。
+- Flutter 资源 14 项完整，AssetManifest.bin 非空；MaterialIcons 字体 1,645,184 字节，与 SDK 原字体一致。APK v2 签名通过，证书 SHA-256 为 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975，匹配原 BKS；16 KiB zipalign 校验通过。
+- 正式包：源社区_v1.2.6.apk，36,086,014 字节，SHA-256 41D34C97AB643E8F4831137E08396528A23F6EC04FDCE1F183ADA7D626889071。交付包与构建产物哈希一致，release.sha256 已同步；全部核验后删除根目录旧包，根目录仅保留 1.2.6，1.2.5 回退 APK 和修改前源码仍在 build/rollback。
+- 58/58 项定向回归通过。受影响源码与测试定向分析无 error/warning，仅 20 项既有风格 info；日志 build/logs/analyze-1.2.6-web.log。没有重复运行无关测试或改动玻璃库/底栏长按交互。
+- 源码保留在当前工作区，未自动提交或推送；没有安装到手机、切换用户设备前台界面或执行真实账号写入。合成切换的实际 FPS 收益、Android 7–9 的 Flutter 侧合成代价、官网登录后各项操作及支付/上传仍未做设备验收，不能把组件与静态包检查称为真机流畅性证明。
+
+
+## 1.2.7+44 小黑屋解码与原生页面范围纠正（2026-11-03）
+
+- 用户指出最近访客、任务中心、我的勋章可以原生渲染，并要求移除更改头像和空间背景。1.2.6 将这些只读/简单内容与复杂脚本流程一起分到网页，判断范围过大。本版明确恢复三处原生入口；以后不能仅因页面含 JavaScript 或需要登录，就将简单列表整体判定为“原生困难”。先区分内容展示、详情弹窗与真正依赖脚本的业务写入。
+- 修改前未提交的 1.2.5/1.2.6 改动已保留；源码快照 build/rollback/account-native-1.2.6-source.zip（lib/test/docs/tool 等，含之前未提交工作），原签名 APK build/rollback/account-native-1.2.6.apk。没有回滚网页宿主性能优化、普通按钮无涟漪或其他已接受改动。
+
+### 小黑屋真实失败原因与修复
+
+- 当前只读 GET https://ycoo.net/forum.php?mod=misc&action=showdarkroom&ajaxdata=json 返回 HTTP 200、Content-Type application/json，但 data 的 UID 键形如 {28432:{...}}，不是标准 JSON。Dio 自动 JSON 解码先抛出异常，异常没有 response 被 Site.request 误报为“连接源社区失败”。用相同真实响应和 Content-Type 的回归，在修改前已经复现用户看到的完全相同提示；不能把这种失败当作 DNS、代理或线路问题。
+- 仅此接口切换为文本读取，由 Site.darkroom 负责处理已观察到的裸数字对象键，再交给严格 jsonDecode；完整匹配 JSON 字符串 token，保留原因文本中的 {123:、反斜杠及转义引号，绝不 eval 服务器文本。其他 API 的自动解码、证书、Cookie 来源和会话代次保护保留。
+- 现场再读 cid=1，末页实际返回 {"message":"0|1","data":[]}；现在同时接受记录映射和真正的空数组末页。坏格式明确提示数据异常，不伪造空列表、不掩盖真实网络失败。列表按 CID 去重、续页和停止条件保持；不执行账号写入。
+
+### 原生页面与入口
+
+- 最近访客精确排除出网页路由，NativeSitePage 将页面实际返回的 .comiis_userlist01 记录渲染为 SiteAvatar 40dp + 姓名/说明的原生 ListTile，点击打开原生个人主页。UID 从合法同源 profile 链接读取，不从头像或任意链接猜身份；图片仅接收同源地址。公开 UID=1 的好友列表片段仅用于验证共享列表排版，不冒充当前登录用户的真实访客数据；未登录的“我的访客”现场响应仍要求登录。
+- 任务中心恢复既有原生内容/标准表单/顶部分栏渲染，入口名称统一“任务中心”。现场游客任务请求跳转登录，未伪造认证后的任务数据或接口；任务领取/奖励等写入只由真实返回的表单和用户确认驱动，登录后操作未验收。
+- “我的勋章”使用当前 UID 的 profile API，验证 space.uid 和会话代次后读取既有 UserProfile.medals，兼容实际存在的空字符串/空集合数据。现场公开 profile(uid=1) 当前有 15 枚勋章，字段为 name/image/description/medalid。复用已经验证的资料契约，不依赖登录后网页 JavaScript；跨账号或旧响应不能回写。
+- 勋章中心的实际 HTML 中，弹窗脚本只展示名称、图片和说明；改为原生紧凑勋章列表和可滚动详情对话框。图片显示 40dp、解码限制 144px，列表按可见元素加载，不把所有小图放大为整屏原图。只替换已识别的详情弹窗；其他真实表单与非展示内容仍保留。官网现有“勋章中心/我的勋章”分栏在原生页内切换。
+- 主“我的”移除更改头像和空间背景；资料设置移除重复“修改头像”入口。头像、空间背景的既有展示数据保留，不删除任何账号数据；其他功能入口保持当前路由。
+- 版本、关于、README、功能对照与两份开发文档同步 1.2.7+44。回归与正式包结果见下方。打包沿用已成功的 V: ASCII 路径离线流程，先按 pubspec 同步忽略的 android/local.properties 版本，避免前次仅传 Gradle 参数却仍带旧 Manifest 版本的问题。
+
+
+### 1.2.7 定向验证
+
+- site / link_routing / account_features / native_site 四个定向文件共 48/48 项通过，日志 build/logs/test-1.2.7-account.log。真实非标准 JSON 响应与相同 Content-Type 在修复前复现“连接源社区失败”，修复后可读取 8 条记录及下一 CID；覆盖原因文本中的数字键片段/反斜杠/转义引号、实际空数组末页、坏格式拒绝、原生分页和空状态。
+- 原生访客/任务/勋章组件检查确认没有 BrowserPage，访客头像为 40dp；勋章中心详情使用原生 AlertDialog。当前账号勋章覆盖已拥有/空字符串集合、错误 UID 及过期会话拒绝；沿用旧的空集合模型修复，不再强制将 medals 转成 List。根“我的”三处入口路由、我的勋章 action=log，以及主菜单/资料设置的头像入口移除均有回归。
+- 公开原站夹具仅保留所需页面片段，不含 Cookie、登录凭据、脚本或会话字段；访客排版夹具来自公开好友列表，不宣称是认证用户访客样本。任务中心内容组件使用合成的标准 HTML 说明做渲染检查，不推测未登录时无法读取的任务领取接口。没有真实账号写入或安装真机。
+
+
+### 1.2.7 最终发布校验
+
+- 固定 V: ASCII 路径、Java 17、离线 Gradle assembleRelease 构建成功（57.1 秒），日志 build/logs/release-1.2.7-account.log。打包前已同步 local.properties 的 1.2.7 / 44；AAPT 确认包名 ycoo.net.php、versionName 1.2.7、versionCode 44、minSdk 24、targetSdk 36、非 debuggable，ZIP 原生库仅 arm64-v8a。
+- Flutter 资源 14 项、非空 AssetManifest.bin 和完整 MaterialIcons 字体 1,645,184 字节校验通过；APK v2 签名通过，证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975 匹配原 BKS；16 KiB zipalign 校验通过。
+- 正式包源社区_v1.2.7.apk，36,086,014 字节；SHA-256 09FA36C0604BF37CA14A72DC9748A03894D5B04010F20B3B30E7292A8D46D740。交付包与构建产物一致，release.sha256 同步。1.2.6 回退包哈希与旧正式包一致（41D34C97AB643E8F4831137E08396528A23F6EC04FDCE1F183ADA7D626889071），完整核验后根目录只留 1.2.7。
+- 48/48 项定向回归通过；受影响源码/测试分析无 error/warning，有 24 项风格 info，日志 build/logs/analyze-1.2.7-account.log。没有修改全局网络/代理/证书、其他项目或玻璃库，没有更新依赖。
+- 未自动安装、提交或推送。小黑屋协议和公开勋章资料已实时只读核对；真实登录账号下的访客名单、任务领取/奖励、勋章操作和最终手机视觉仍未验收。组件测试与静态 APK 检查不能替代这些设备/账号验收。
+
+
+## 1.2.8+45 任务分栏、勋章按钮与访客误报修复（2026-11-03）
+
+- 当前工作区包含此前未提交工作，全部保留；修改前源快照 build/rollback/account-layout-1.2.7-source.zip，原签名 1.2.7 回退包 build/rollback/account-layout-1.2.7.apk。只修改用户指定的四处布局/提示，继续使用原账号、包名和签名。
+- 任务中心原通用规则把超过三个分栏设为可滚动并左对齐，导致四栏挤在左边。现在仅对同源任务页面的四个分栏使用固定等宽、TabAlignment.fill，横向内边距 4dp；其他页面继续沿用原适配规则。标签字体继承实际主题，大字号允许多行并增加栏高，保留完整辅助功能文字，不以压缩字号强塞内容。
+- 勋章“立即申请”从已返回 HTML 的真实链接提取，不手工构造申请接口。支持普通 href 和脚本弹窗中包含的同源 URL 字面量；只接受 home.php?mod=medal 的业务地址，拒绝伪装域名/userinfo，已有 medalid 时核对当前行 ID。原查询参数和表单 hash 原样保留；只在用户点击后沿既有原生页面流程导航，不执行网页 JavaScript 或自动提交。
+- 每行申请按钮置于右侧 104dp 固定列，名称/说明与按钮在同一行，内容长短不改变按钮横坐标。复用 ListTile，在标题区域使用可伸展文字列和按钮列，避开 ListTile.trailing 对高度的限制；大字号时按钮自然增高、文字可换行。无申请入口的已拥有勋章不伪造申请按钮，原生详情弹窗保持。
+- 访客页“此插件仍可能包含未适配的脚本操作”是误报。现场已有 HTML 的 #comiis_followmod 隐藏弹窗包含 popup.close/comiis_list_followmod；脚本收集发生在隐藏节点/网页外壳清理前，所以已从原生页面移除的节点仍被计入。现在警告只统计清理后仍在内容树中的实际操作，再排除已有原生替代的行/弹窗；真实可见未知脚本仍提示，不整页屏蔽。
+- 小黑屋仅在每条 AppSectionCard 增加 bottom=8dp，不改共享卡片或其他页面间距。原 CID 分页、解码、资料入口及空状态保持。
+- 新回归在修改前复现访客误报和任务四栏左挤；修复后验证 320dp 窄屏、任务 1/2 倍字号四栏中心等距及标签完整高度、申请按钮 1/2/3 倍字号同列同宽及文字完整、实际链接参数保留/非法目标拒绝、只读导航不发生 POST，以及小黑屋可见卡片间隙为 8dp。申请链接夹具为合成脱敏数据，不宣称已执行真实账号申请。最终定向测试与 APK 校验见下方。
+
+### 1.2.8 最终发布校验
+
+- 32/32 项定向回归通过，日志 build/logs/test-1.2.8-layout.log；受影响源码和测试的定向分析无 error/warning，26 项风格 info，日志 build/logs/analyze-1.2.8-layout.log。git diff --check 通过。
+- 沿用已有 V: ASCII 路径、Java 17 与离线 Gradle，assembleRelease 成功（53 秒），日志 build/logs/release-1.2.8-layout.log。构建前同步 local.properties 的版本 1.2.8 / 45，未更新依赖或全局配置。
+- AAPT 确认包名 ycoo.net.php、versionName 1.2.8、versionCode 45、minSdk 24、targetSdk 36、非 debuggable；ZIP 原生库仅 arm64-v8a。14 项 Flutter 资源、非空 AssetManifest.bin、完整 MaterialIcons 字体 1,645,184 字节通过检查。原证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975 与 v2 签名通过，16 KiB zipalign 通过，记录 build/logs/verify-1.2.8-layout.log。
+- 正式包源社区_v1.2.8.apk，36,086,010 字节；SHA-256 6A4FDE64EEB7C850A6F01BF53B82977C3EDD62B419985D51134F7EFC0FA5E866。交付包与构建产物哈希一致，release.sha256 已同步。1.2.7 回退包哈希与旧正式包一致（09FA36C0604BF37CA14A72DC9748A03894D5B04010F20B3B30E7292A8D46D740），全部核验后根目录只保留最新 1.2.8 APK；旧包与修改前源码快照仍在 build/rollback。
+- 没有自动安装、提交或推送，没有真实账号写入。四等分和按钮位置属于组件测试验收，不能替代手机视觉检查；登录账号的访客数据、任务操作和勋章申请流程仍需真实账号/设备验收，不能将合成夹具的只读导航测试视为真实申请成功。
+
+### GitHub 同步范围（2026-11-03）
+
+- 用户明确要求推送 GitHub；同步 origin（Chengeeker/Ycoo-Community）的 main 分支，包含此前未提交的 1.2.5–1.2.8 累计修复、脱敏测试夹具、构建资源校验和开发文档。
+- 提交前 fetch 确认 HEAD 与 origin/main 均为 d51d8bd，没有远端分叉；沿用 1.2.8 已完成的定向测试和正式包静态检查，不因仅提交/推送重复构建。
+- 签名/本地配置、登录信息、构建日志/回退文件和 APK 保持忽略，不加入 Git；本次只同步源码，不创建 GitHub Release。真实设备/账号验收边界沿用上述发布记录。

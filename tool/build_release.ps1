@@ -1,6 +1,19 @@
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
 $flutter = 'D:\flutter_sdk\bin\flutter.bat'
+function Assert-FlutterAssets([string]$apk, [long]$fontLength) {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($apk)
+    try {
+        $manifest = $archive.GetEntry('assets/flutter_assets/AssetManifest.bin')
+        $font = $archive.GetEntry('assets/flutter_assets/fonts/MaterialIcons-Regular.otf')
+        if (!$manifest -or $manifest.Length -eq 0 -or !$font -or $font.Length -ne $fontLength) {
+            throw 'APK Flutter assets are missing or the Material icon font is incomplete.'
+        }
+    } finally {
+        $archive.Dispose()
+    }
+}
 $logDirectory = Join-Path $project 'build\logs'
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
 $logPath = Join-Path $logDirectory ('release-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.log')
@@ -26,6 +39,8 @@ try {
     $tools=Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools\36.0.0'
     $badging=(& (Join-Path $tools 'aapt.exe') dump badging $apk) -join "`n"
     if ($LASTEXITCODE -ne 0 -or $badging -notmatch "package: name='ycoo.net.php'" -or $badging -notmatch "native-code: 'arm64-v8a'" -or $badging -match "'armeabi-v7a'|'x86_64'|'x86'") { throw 'APK identity or ABI verification failed.' }
+    $fontLength = (Get-Item -LiteralPath (Join-Path (Split-Path -Parent $flutter) 'cache\artifacts\material_fonts\MaterialIcons-Regular.otf')).Length
+    Assert-FlutterAssets $apk $fontLength
     & (Join-Path $tools 'apksigner.bat') verify --verbose $apk
     if ($LASTEXITCODE -ne 0) { throw 'APK signature verification failed.' }
     & (Join-Path $tools 'zipalign.exe') -c -P 16 -v 4 $apk | Select-Object -Last 1

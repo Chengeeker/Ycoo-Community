@@ -2022,33 +2022,23 @@ class MyDashboardPage extends StatelessWidget {
                   ),
                   (
                     '繁星开通',
-                    '/plugin.php?id=boan_group&frame=yes&mobile=2',
+                    '/plugin.php?id=boan_group&frame=yes',
                     Icons.stars_outlined,
                   ),
                   (
-                    '我的任务',
+                    '任务中心',
                     '/home.php?mod=task&mobile=2',
                     Icons.task_alt_outlined,
                   ),
                   (
                     '我的勋章',
-                    '/home.php?mod=medal&mobile=2',
+                    '/home.php?mod=medal&action=log&mobile=2',
                     Icons.workspace_premium_outlined,
                   ),
                   (
                     '我的道具',
                     '/home.php?mod=magic&mobile=2',
                     Icons.auto_fix_high_outlined,
-                  ),
-                  (
-                    '更改头像',
-                    '/home.php?mod=spacecp&ac=avatar&mobile=2',
-                    Icons.add_a_photo_outlined,
-                  ),
-                  (
-                    '空间背景',
-                    '/plugin.php?id=comiis_app_homestyle&mobile=2',
-                    Icons.wallpaper_outlined,
                   ),
                 ])
                   ReviewPreferenceTile(
@@ -2289,12 +2279,12 @@ class SettingsPage extends StatelessWidget {
             children: [
               ReviewPreferenceTile(
                 title: '关于源社区',
-                subtitle: '1.2.4 · 界面复用自 Review',
+                subtitle: '1.2.8 · 界面复用自 Review',
                 leading: const Icon(Icons.info_outline),
                 onTap: () => showAboutDialog(
                   context: context,
                   applicationName: '源社区',
-                  applicationVersion: '1.2.4',
+                  applicationVersion: '1.2.8',
                   children: [
                     const Text(
                       '基于源论坛的第三方客户端。M3 主题与通用组件复用自 Review（MIT）。社区内容与账户权限由原站提供。',
@@ -2609,7 +2599,12 @@ class ServicesPage extends StatelessWidget {
                 if (context.mounted && site.loggedIn)
                   await push(context, PromotionPage(site));
               } else {
-                await openWeb(context, entry.value, title: entry.key);
+                await openWeb(
+                  context,
+                  entry.value,
+                  title: entry.key,
+                  forceWeb: const {'门户原站', '电脑版'}.contains(entry.key),
+                );
               }
             },
           ),

@@ -117,34 +117,20 @@ class HapticSplashFactory extends InteractiveInkFeatureFactory {
     double? radius,
     VoidCallback? onRemoved,
   }) {
-    return _HapticInkSplash(
+    return _HapticNoSplash(
       controller: controller,
       referenceBox: referenceBox,
-      position: position,
       color: color,
-      textDirection: textDirection,
-      containedInkWell: containedInkWell,
-      rectCallback: rectCallback,
-      borderRadius: borderRadius,
-      customBorder: customBorder,
-      radius: radius,
       onRemoved: onRemoved,
     );
   }
 }
 
-class _HapticInkSplash extends InkSplash {
-  _HapticInkSplash({
+class _HapticNoSplash extends NoSplash {
+  _HapticNoSplash({
     required super.controller,
     required super.referenceBox,
-    required super.position,
     required super.color,
-    required super.textDirection,
-    super.containedInkWell,
-    super.rectCallback,
-    super.borderRadius,
-    super.customBorder,
-    super.radius,
     super.onRemoved,
   });
 

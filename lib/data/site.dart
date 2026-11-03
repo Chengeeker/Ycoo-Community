@@ -63,6 +63,43 @@ String? nativeThreadId(Uri uri) => isSite(uri)
               : null)
     : null;
 
+bool requiresSiteWebView(Uri uri) {
+  if (!isSite(uri)) return false;
+  final query = uri.queryParameters;
+  return switch (uri.path) {
+    '/plugin.php' => const {
+      'boan_group',
+      'comiis_app_homestyle',
+      'jnfarm',
+      'bphp_clouds:index',
+    }.contains(query['id']),
+    '/group.php' => true,
+    '/forum.php' => query['mod'] == 'collection',
+    '/home.php' =>
+      query['mod'] == 'magic' ||
+          (query['mod'] == 'space' &&
+              !(query['do'] == 'friend' && query['view'] == 'visitor') &&
+              const {
+                'friend',
+                'blog',
+                'album',
+                'doing',
+                'follow',
+                'pm',
+              }.contains(query['do'])) ||
+          (query['mod'] == 'spacecp' &&
+              (const {
+                    'avatar',
+                    'invite',
+                    'profile',
+                    'pm',
+                  }.contains(query['ac']) ||
+                  (query['ac'] == 'credit' &&
+                      const {'transfer', 'buy'}.contains(query['op'])))),
+    _ => false,
+  };
+}
+
 bool isDirectForumImage(Uri uri) =>
     ['http', 'https'].contains(uri.scheme) &&
     uri.userInfo.isEmpty &&
@@ -303,6 +340,15 @@ class Site extends ChangeNotifier {
               )
             : data,
         options: Options(
+          // Discuz emits bare numeric keys here; decode this endpoint explicitly.
+          responseType:
+              uri.path == '/forum.php' &&
+                  (query?['action'] ?? uri.queryParameters['action']) ==
+                      'showdarkroom' &&
+                  (query?['ajaxdata'] ?? uri.queryParameters['ajaxdata']) ==
+                      'json'
+              ? ResponseType.plain
+              : null,
           method: data == null ? 'GET' : 'POST',
           contentType: data == null
               ? null
@@ -349,6 +395,50 @@ class Site extends ChangeNotifier {
             : '服务器返回 ${e.response!.statusCode}，请稍后重试',
       );
     }
+  }
+
+  Future<(List<Map>, String?)> darkroom({String? cursor}) async {
+    final response = await request(
+      '/forum.php',
+      query: {
+        'mod': 'misc',
+        'action': 'showdarkroom',
+        'ajaxdata': 'json',
+        if (cursor != null) 'cid': cursor,
+      },
+    );
+    dynamic body = response.data;
+    if (body is String) {
+      try {
+        body = jsonDecode(
+          body
+              .trim()
+              .replaceFirst(RegExp(r'^\uFEFF'), '')
+              .replaceAllMapped(
+                RegExp(r'"(?:\\.|[^"\\])*"|([,{]\s*)(\d+)(\s*:)'),
+                (match) => match[2] == null
+                    ? match[0]!
+                    : '${match[1]}"${match[2]}"${match[3]}',
+              ),
+        );
+      } on FormatException {
+        throw SiteException('小黑屋返回的数据格式异常，请稍后重试');
+      }
+    }
+    if (body is! Map) throw SiteException('无法读取小黑屋记录');
+    final records = body['data'];
+    final List<Map> batch;
+    if (records is Map) {
+      batch = records.values.whereType<Map>().toList();
+    } else if (records is List && records.isEmpty) {
+      batch = [];
+    } else {
+      throw SiteException('无法读取小黑屋记录');
+    }
+    final next = RegExp(r'^1\|(\d+)$')
+        .firstMatch('${body['message'] ?? ''}')
+        ?.group(1);
+    return (batch, next);
   }
 
   Future<Map<String, dynamic>> api(
