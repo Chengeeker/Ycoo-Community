@@ -1845,6 +1845,7 @@ class MyDashboardPage extends StatelessWidget {
       appBar: ReviewFrostedAppBar(
         automaticallyImplyLeading: false,
         toolbarHeight: toolbarHeight,
+        actionsPadding: const EdgeInsetsDirectional.only(end: 4),
         title: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2183,6 +2184,136 @@ class SettingsPage extends StatelessWidget {
   const SettingsPage(this.site, this.settings, {super.key});
   final Site site;
   final Settings settings;
+
+  Future<void> _showAbout(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final icon = ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Image.asset(
+        'assets/site-icon.png',
+        width: 72,
+        height: 72,
+        cacheWidth: 216,
+        fit: BoxFit.cover,
+        excludeFromSemantics: true,
+      ),
+    );
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(child: icon),
+            const SizedBox(height: 14),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Text(
+                  '源社区',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: 21,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'v1.2.12',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Material 3 社区客户端',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: 13,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '基于源论坛的第三方客户端。社区内容与账户权限由原站提供。',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: 12.5,
+                height: 1.35,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppSectionCard(
+              child: ReviewPreferenceTile(
+                title: '开源仓库',
+                subtitle: 'github.com/Chengeeker/Ycoo-Community',
+                leading: Icon(
+                  Icons.code_rounded,
+                  size: 20,
+                  color: scheme.primary,
+                ),
+                trailing: Icon(
+                  Icons.open_in_new_rounded,
+                  size: 16,
+                  color: scheme.primary,
+                ),
+                titleStyle: const TextStyle(fontSize: 13),
+                subtitleStyle: const TextStyle(fontSize: 11),
+                onTap: () => openWeb(
+                  dialogContext,
+                  'https://github.com/Chengeeker/Ycoo-Community',
+                  title: '开源仓库',
+                ),
+              ),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => showLicensePage(
+              context: dialogContext,
+              applicationName: '源社区',
+              applicationVersion: '1.2.12',
+              applicationIcon: icon,
+            ),
+            child: const Text('开源许可'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: FilledButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            ),
+            child: const Text('我知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     extendBodyBehindAppBar: true,
@@ -2213,16 +2344,6 @@ class SettingsPage extends StatelessWidget {
         AppSectionCard(
           child: Column(
             children: [
-              ListenableBuilder(
-                listenable: settings,
-                builder: (context, _) => ReviewSwitchTile(
-                  title: '自动签到',
-                  summary: '登录后启动应用时在后台检查并签到，不打断当前页面',
-                  leading: const Icon(Icons.event_available_outlined),
-                  value: settings.prefs.getBool('autoSignIn') ?? false,
-                  onChanged: (value) => settings.set('autoSignIn', value),
-                ),
-              ),
               ReviewPreferenceTile(
                 title: '阅读历史',
                 leading: const Icon(Icons.history_rounded),
@@ -2236,7 +2357,7 @@ class SettingsPage extends StatelessWidget {
               ),
               ReviewPreferenceTile(
                 title: '阅读与社区功能',
-                subtitle: '回复分页、URL 链接与 FPS',
+                subtitle: '回复分页、URL 链接、FPS 与自动签到',
                 leading: const Icon(Icons.auto_stories_outlined),
                 onTap: () => push(context, ReadingSettingsPage(site, settings)),
               ),
@@ -2279,18 +2400,9 @@ class SettingsPage extends StatelessWidget {
             children: [
               ReviewPreferenceTile(
                 title: '关于源社区',
-                subtitle: '1.2.8 · 界面复用自 Review',
+                subtitle: '1.2.12',
                 leading: const Icon(Icons.info_outline),
-                onTap: () => showAboutDialog(
-                  context: context,
-                  applicationName: '源社区',
-                  applicationVersion: '1.2.8',
-                  children: [
-                    const Text(
-                      '基于源论坛的第三方客户端。M3 主题与通用组件复用自 Review（MIT）。社区内容与账户权限由原站提供。',
-                    ),
-                  ],
-                ),
+                onTap: () => _showAbout(context),
               ),
             ],
           ),
@@ -2498,7 +2610,7 @@ class _SettingsSectionTitle extends StatelessWidget {
   final String title;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+    padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 4),
     child: Text(
       title,
       style: TextStyle(

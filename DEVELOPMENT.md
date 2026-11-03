@@ -1,6 +1,6 @@
 # 源社区开发文档
 
-更新：2026-11-03。当前版本 1.2.8+45，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
+更新：2026-11-03。当前版本 1.2.12+49，包名 ycoo.net.php，仅 arm64-v8a。最低 Android 7.0（API 24）。
 
 ## 约束与基线
 
@@ -836,3 +836,82 @@
 - 用户明确要求推送 GitHub；同步 origin（Chengeeker/Ycoo-Community）的 main 分支，包含此前未提交的 1.2.5–1.2.8 累计修复、脱敏测试夹具、构建资源校验和开发文档。
 - 提交前 fetch 确认 HEAD 与 origin/main 均为 d51d8bd，没有远端分叉；沿用 1.2.8 已完成的定向测试和正式包静态检查，不因仅提交/推送重复构建。
 - 签名/本地配置、登录信息、构建日志/回退文件和 APK 保持忽略，不加入 Git；本次只同步源码，不创建 GitHub Release。真实设备/账号验收边界沿用上述发布记录。
+
+## 1.2.9+46 设置分组对齐与阅读设置统一（2026-11-03）
+
+- 修改基线为已推送的 1285753（1.2.8+45），工作区原本干净。修改前正式包与源码快照分别保存在 build/rollback/settings-1.2.8.apk、build/rollback/settings-1.2.8-source.zip；保留原包名、签名和 arm64-v8a。
+- 全局检索页面的分组标题/卡片及共享标题调用，发现设置页 4 处和个性化页 5 处共用 _SettingsSectionTitle，原 16dp 起始缩进只对齐图标列，未对齐选项文字。共享标题默认起始缩进改为 56dp（卡片内 16dp + 24dp 图标 + 16dp 间隔）；明暗模式的 RadioListTile 控件实际占位不同，使用 72dp，组件测试核对实际文字边界，不用图标可见尺寸猜单选控件占位。其他页面的资料字段、原生正文标题和网格栏目不套用列表文字缩进。
+- 阅读与社区功能沿用已有 AppSectionCard 与 ReviewSwitchTile，补齐 16dp 页面边距、24dp 卡片圆角和四行图标，选项文字共用同一列；没有新造外观组件或改动共享卡片/开关行为。
+- 自动签到从设置首页移入阅读与社区功能，沿用 autoSignIn 键、默认关闭、原来的说明和 Settings.set；不重置已保存值、不在进入页面或移动开关时触发签到。实际后台签到的并发、会话和关闭保护代码未变，原自动签到回归保留。
+- 关于窗口补上 assets/site-icon.png 原图，补入 pubspec 资源清单，显示 48dp、解码缓存宽度 144px，避免按原始大图长期解码；不改动原 PNG 或启动器图标，不依赖远程图片请求。名称和版本信息保持原生 AboutDialog 流程。
+- 定向测试在修复前复现标题错位；修复后 16/16 项通过（settings_ui_test / reading_tools_test），覆盖设置和个性化的 320dp 宽度、深浅色、1/2 倍字号下全部 9 个标题边界，阅读设置在 320dp/2 倍字号的卡片归属/文字列/滚动、自动签到原值和切换持久化、关于图标资源加载，以及原签到并发/账号切换/关闭保护。日志 build/logs/test-1.2.9-settings.log。
+- 定向分析无 error/warning，有 11 项既有风格 info，日志 build/logs/analyze-1.2.9-settings.log。仅使用组件与静态检查，不宣称已完成真机视觉或真实账号签到验收；正式包校验结果见下方。
+
+### 1.2.9 最终发布校验
+
+- 固定已有 V: 映射、Java 17 和离线 Gradle assembleRelease 构建成功（57 秒），日志 build/logs/release-1.2.9-settings.log。AAPT 确认包名 ycoo.net.php、versionName 1.2.9、versionCode 46、minSdk 24、targetSdk 36、非 debuggable；ZIP 原生库仅 arm64-v8a。
+- Flutter 资源 15 项，AssetManifest.bin 非空、MaterialIcons 完整字体 1,645,184 字节校验通过。新增打包的 site-icon.png 为 924,494 字节，SHA-256 9D50CDD9B4F9ED1667F3D039175DABC4FCF3D2935687D4ABB043CD5CEF58BCAD 与项目原始 PNG 一致；未修改启动器图标或原图文件。
+- APK v2 签名及原证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975 校验通过；16 KiB zipalign 校验通过。完整记录 build/logs/verify-1.2.9-settings.log。
+- 正式包源社区_v1.2.9.apk，37,010,686 字节，SHA-256 8238EDB1A49AE33A420B55499E831C660DCB6569383F031697B1B570A212E664；交付文件与构建产物一致，release.sha256 同步。核对 1.2.8 回退包与旧正式包哈希均为 6A4FDE64EEB7C850A6F01BF53B82977C3EDD62B419985D51134F7EFC0FA5E866 后，根目录仅保留最新包；回退包和源码快照留在 build/rollback。
+- 16/16 定向测试通过，定向分析无 error/warning（11 项风格 info）。没有更新依赖、改变网站请求/签到逻辑或全局配置。未安装真机、执行真实账号签到、提交或推送；组件布局检查与静态包检查不替代真机视觉验收。
+
+## 1.2.10+47 标题对齐基准纠正（2026-11-03）
+
+- 用户明确：小标题应与整行内容起始处、即图标左侧对齐，而非文字左侧。1.2.9 将“内容左侧”理解成文字列，属于需求理解错误；1.2.9 的文字列对齐记录和测试不作为后续设计规范。
+- 设置页 4 处和个性化页 5 处统一使用卡片内起始 16dp 的标题缩进，移除 56dp 文字列缩进及单选组 72dp 特例，不再为单选组另设标题偏移。标题与图标/首个单选控件整体的起始边界一致，保留与卡片外边缘的 16dp 间距。
+- 保留 1.2.9 的阅读设置卡片/图标、自动签到入口移动和原状态、关于原始应用图标；没有改动网站请求或签到逻辑。已有未提交源码全部保留。修改前快照 build/rollback/settings-align-1.2.9-source.zip，原签名回退包 build/rollback/settings-align-1.2.9.apk。
+- 回归改为比较标题与实际图标/单选控件左边界，并明确断言距离卡片边缘 16dp，防止再次用文字列作为预期。10/10 项设置组件检查通过，覆盖 320dp、深浅色、1/2 倍字号及原阅读设置/自动签到状态/关于图标；日志 build/logs/test-1.2.10-alignment.log。真机视觉验收仍未进行，正式包校验见下方。
+
+### 1.2.10 关于窗口按 Review 样式补齐（同轮追加）
+
+- 用户在本轮标题修正打包期间指出关于窗口仍很草率，要求参考 Review，特别是图标圆角。只读核对 Review 当前 settings_view.dart 的 _showAboutDialog（项目 3.14.7+245），其图标 72dp / 圆角 18dp、窗口圆角 20dp、内容内边距 20/24/20/16、居中名称与版本标签、底部居中圆角按钮；没有修改 Review 项目。
+- 源社区移植相应布局参数，使用原图的运行时 ClipRRect 圆角展示、72dp 图标和 216px 解码缓存，原 PNG 文件和启动器图标均不修改。窗口保留真实应用说明和开源许可入口，不复制 Review 专有功能文案。
+- 标题/版本使用居中 Wrap 以兼容 320dp 与两倍字号，内容可滚动，操作区保留关闭和原生许可页。字体样式从当前主题派生，保留字体设置与系统缩放。仍由原设置行提供一次点击触感，不重复添加触感回调。
+- 同一 1.2.10+47 的标题修正中间包尚未交付；原中间包已保留在 build/rollback/about-1.2.10-align-only.apk，源码快照为同目录 about-1.2.10-align-only-source.zip，正式交付以本轮关于窗口更新后的重建包为准。
+- 更新后 13 项正式设置组件回归及 1 项本地渲染检查全部通过，日志 build/logs/test-1.2.10-about.log。核对圆角、72dp 尺寸、原始资源、居中位置、窄屏深浅色/两倍字号、关闭及许可页可达，标题仍对齐图标左侧。
+- 本地渲染图 build/evidence/about-1.2.10/light.png 和 dark-large.png 已实际打开检查。渲染使用 Windows 中文字体模拟，仅供布局检查，不是 Android 真机截图；早期预览中未继承主题字体导致测试 Ahem 方框，已改为派生主题字体并重渲染。临时预览脚本/图片位于忽略的 build 目录，不加入源码仓库。
+
+### 1.2.10 最终交付校验（包含关于窗口更新）
+
+- 最终源码经定向分析无 error/warning（11 项既有风格 info），13 项设置回归和 1 项本地渲染检查通过。最终日志 build/logs/analyze-1.2.10-about.log、test-1.2.10-about.log；不以 Windows 组件渲染代替 Android 真机视觉验收。
+- 使用同一 V: 映射、Java 17、离线 Gradle assembleRelease 重建成功（57 秒），日志 build/logs/release-1.2.10-about.log。AAPT 确认 ycoo.net.php / 1.2.10 / 47、minSdk 24、targetSdk 36，非 debuggable，原生库仅 arm64-v8a。
+- 15 项 Flutter 资源、非空 AssetManifest.bin、完整 MaterialIcons 字体 1,645,184 字节通过检查；原图 PNG 长度 924,494 字节及 SHA-256 9D50CDD9B4F9ED1667F3D039175DABC4FCF3D2935687D4ABB043CD5CEF58BCAD 与项目原始文件一致。圆角仅在 UI 中裁剪，没有重绘或修改原文件。
+- APK v2 签名和原证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975 一致，16 KiB zipalign 通过；完整记录 build/logs/verify-1.2.10-about.log。
+- 最终包源社区_v1.2.10.apk 为 37,010,686 字节，SHA-256 6F64A2F18A96432B9169F5F6D9AC25DA618779B661E2C0E3F68647DA68B13C47，交付包与构建产物一致，release.sha256 已更新。它替换了尚未交付的同版本标题修正中间包（SHA-256 AF7D66CFE2183270245D97E55850077266645A75E239F634719181E3F780EF07）；中间包和 1.2.9 回退包均已核验并留在 build/rollback，根目录仅保留最终最新包。
+- 开发文档、README、功能对照和关于版本同步。未更新依赖、修改 Review 源码或全局配置，没有安装真机、执行真实账号操作、提交或推送。
+
+## 1.2.11+48 关于文案简化与开源仓库入口（2026-11-03）
+
+- 用户要求去掉产品界面中的“复用自 Review”，补上开源仓库地址。设置行副标题只显示版本号，关于说明移除技术复用文案；保留现有开源许可入口与仓库 LICENSE，不把技术说明继续放在主界面。
+- 关于窗口新增“开源仓库”卡片，展示 github.com/Chengeeker/Ycoo-Community，点击使用既有 openWeb 打开 https://github.com/Chengeeker/Ycoo-Community；地址已核对当前 origin 远端。复用现有外链确认、复制及浏览器流程，不引入新依赖或外链例外。
+- 保留圆角图标、名称/版本标签、图标列标题对齐及自动签到入口调整。已有未提交改动全部保留，修改前源快照 build/rollback/about-link-1.2.10-source.zip、原签名回退包 build/rollback/about-link-1.2.10.apk。
+- 13 项设置组件回归及 1 项本地渲染检查通过，覆盖深浅色/320dp/两倍字号、设置和关于窗口无“复用自”或 Review 文案、显示完整仓库路径、点击进入现有外链确认且地址准确、许可页/关闭入口及已有布局。日志 build/logs/test-1.2.11-about-link.log。定向分析无 error/warning（11 项既有风格 info），日志 build/logs/analyze-1.2.11-about-link.log。
+- 组件渲染图位于 build/evidence/about-1.2.11，已检查布局；使用桌面中文字体模拟，不能视作真机验收。正式包结果随后补充，不自动安装或推送。
+
+### 1.2.11 最终交付校验
+
+- 离线 Gradle assembleRelease 成功（1 分 2 秒），日志 build/logs/release-1.2.11-about-link.log。包名 ycoo.net.php、versionName 1.2.11、versionCode 48、minSdk 24、targetSdk 36，非 debuggable；ZIP 原生库仅 arm64-v8a。
+- 15 项 Flutter 资源、非空 AssetManifest.bin、完整 MaterialIcons 字体 1,645,184 字节及原图 PNG 哈希均通过校验；原证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975 / APK v2 签名通过，16 KiB zipalign 通过，记录 build/logs/verify-1.2.11-about-link.log。
+- 正式包源社区_v1.2.11.apk，37,010,686 字节，SHA-256 C9EEDC94D89180E46DE8411914CCC4F125EEE8C6F64BE1928F0FFDF3F0E8AEAB；交付文件与构建产物一致，release.sha256 同步。1.2.10 回退包与旧正式包哈希一致（6F64A2F18A96432B9169F5F6D9AC25DA618779B661E2C0E3F68647DA68B13C47），全部检查后根目录仅保留最新 1.2.11 APK。
+- 最终 13 项设置回归和 1 项本地渲染检查通过；定向分析无 error/warning（11 项风格 info）。未更新依赖、删除许可证文件、安装真机、执行真实账号操作、提交或推送。仓库按钮验证到准确的外链确认地址，未在测试中启动真实 GitHub 网页；静态和桌面组件检查不替代真机验收。
+
+## 1.2.12+49 我的页设置图标右边缘对齐（2026-11-03）
+
+- 用户要求“我的”页设置按钮与卡片右边框对齐。实际几何测量显示：320dp 下卡片右边缘 x=304，设置图标右边缘 x=308，向右多出 4dp。
+- 仅在 MyDashboardPage 的 ReviewFrostedAppBar 设置 actionsPadding.end=4，将可见设置图标右边缘移到卡片右边框；复用现有 actionsPadding 参数，不修改共享顶栏、卡片边距或 IconButton 的内部布局/点击范围。
+- 修改前保留原签名 1.2.11 回退包 build/rollback/dashboard-align-1.2.11.apk 和完整工作区源码快照 dashboard-align-1.2.11-source.zip。此前未提交的设置/关于等工作全部保留，不回滚已接受的改动。
+- 新增几何回归在修复前复现 4dp 偏差，修复后验证 320/393dp、1/2 倍字号时图标与卡片右边缘一致、实际 IconButton 点击区域至少 48×48dp、点击可打开设置。my_dashboard_test 和 settings_ui_test 共 19/19 通过，保留统计缓存、旧会话拒绝、关于仓库入口/许可页及此前设置布局检查；日志 build/logs/test-1.2.12-dashboard-align.log。
+- 同步版本 1.2.12+49。仅组件/静态检查，不宣称 Android 真机视觉验收；正式构建校验结果见下方。
+
+### 1.2.12 最终交付校验
+
+- 离线 Gradle assembleRelease 成功（50 秒），日志 build/logs/release-1.2.12-dashboard-align.log；AAPT 确认 ycoo.net.php / versionName 1.2.12 / versionCode 49、minSdk 24、targetSdk 36、非 debuggable，原生库仅 arm64-v8a。
+- 15 项 Flutter 资源、非空 AssetManifest.bin、完整 MaterialIcons 字体 1,645,184 字节和原始图标哈希校验通过；APK v2 / 原证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975、16 KiB zipalign 全部通过，记录 build/logs/verify-1.2.12-dashboard-align.log。
+- 正式包源社区_v1.2.12.apk，37,010,686 字节，SHA-256 36F0D490D138428F00761F26C3F63ADDBAA1A292919501CF0B6A41B003D528DB，与构建产物一致，release.sha256 同步。核对 1.2.11 回退包与旧正式包哈希一致后，根目录仅保留最新 APK，旧包和源码快照保留在 build/rollback。
+- 19/19 定向测试通过，定向分析无 error/warning（11 项既有风格 info），日志 build/logs/analyze-1.2.12-dashboard-align.log。未改变共享组件、依赖、网站接口或全局配置；未安装真机、使用真实账号验收、提交或推送。组件几何和静态包检查不能替代真机视觉验收。
+
+### 1.2.12 GitHub 同步范围（2026-11-03）
+
+- 用户明确要求推送 GitHub。本次同步 origin（Chengeeker/Ycoo-Community）的 main，包含 1.2.9–1.2.12 累计的设置卡片/自动签到入口、标题图标列对齐、关于窗口及仓库入口、我的页设置图标对齐，以及对应测试和开发文档。
+- 提交前 fetch 确认本地 HEAD 与 origin/main 均为 1285753119c2332d807ac81f4548ba5891d32702，没有远端分叉。核对现有 19 项回归、定向分析及 1.2.12 正式包静态检查；仅提交和推送不重复构建。
+- APK 文件哈希与 release.sha256 一致；签名、本地配置、构建缓存、截图、日志和回退包均不加入 Git，不创建 GitHub Release。真机/账号验收边界保持上述记录。

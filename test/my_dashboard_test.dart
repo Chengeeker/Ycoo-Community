@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yuan_community/core/theme/app_theme.dart';
+import 'package:yuan_community/core/widgets/app_section_card.dart';
 import 'package:yuan_community/data/site.dart';
 import 'package:yuan_community/pages/home.dart';
 import 'package:yuan_community/settings.dart';
@@ -23,6 +25,53 @@ class ProfileSite extends Site {
 }
 
 void main() {
+  testWidgets(
+    'settings icon aligns with card edge and keeps its touch target',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      for (final width in [320.0, 393.0]) {
+        for (final scale in [1.0, 2.0]) {
+          tester.view.physicalSize = Size(width, 900);
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: AppTheme.lightTheme(),
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: TextScaler.linear(scale)),
+                child: child!,
+              ),
+              home: MyDashboardPage(Site(prefs), Settings(prefs)),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final button = find.widgetWithIcon(
+            IconButton,
+            Icons.settings_outlined,
+          );
+          final icon = find.byIcon(Icons.settings_outlined);
+          final card = find.byType(AppSectionCard).first;
+          expect(
+            tester.getTopRight(icon).dx,
+            closeTo(tester.getTopRight(card).dx, 0.1),
+            reason:
+                'width=$width scale=$scale; target=${tester.getRect(button)}',
+          );
+          expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
+          expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
+          await tester.tap(button);
+          await tester.pumpAndSettle();
+          expect(find.byType(SettingsPage), findsOneWidget);
+          Navigator.of(tester.element(find.byType(SettingsPage))).pop();
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        }
+      }
+    },
+  );
+
   for (final cached in [false, true]) {
     testWidgets(
       'dashboard reserves stats and restores account cache: $cached',

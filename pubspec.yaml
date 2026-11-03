@@ -1,7 +1,7 @@
 name: yuan_community
 description: 源社区 Material 3 客户端
 publish_to: none
-version: 1.2.8+45
+version: 1.2.12+49
 environment:
   sdk: ^3.13.0
 dependencies:
@@ -32,5 +32,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/default-avatar.svg
+    - assets/site-icon.png
 
 
