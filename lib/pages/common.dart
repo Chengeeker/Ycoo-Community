@@ -13,6 +13,8 @@ import '../core/utils/haptic_feedback_util.dart';
 
 import '../core/design_system/components/review_frosted_app_bar.dart';
 import '../data/site.dart';
+import '../data/profile.dart';
+import 'profile.dart';
 import '../core/widgets/app_scope.dart';
 import 'thread.dart' show routeLink;
 import 'media.dart' show openGallery;
@@ -584,6 +586,11 @@ Future<void> openWeb(
   }
   if (isDownloadUri(uri)) {
     await showDownloadDialog(context, uri.toString());
+    return;
+  }
+  final profileUid = nativeUserProfileId(uri);
+  if (!forceWeb && site != null && profileUid != null) {
+    await push(context, ProfilePage(site, profileUid));
     return;
   }
   final isAuthentication =

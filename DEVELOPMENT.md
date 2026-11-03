@@ -5,10 +5,10 @@
 ## 约束与基线
 
 - 站点 https://ycoo.net/portal.php，为 Discuz 社区。真实页面和服务端响应是业务唯一依据。
-- Review 参考 D:/App/Review 当前工作区（3.12.0+214，基础提交 c4f86b3，存在未提交修改）。只读参考，不改动源项目。
+- Review 参考 Review 参考项目 当前工作区（3.12.0+214，基础提交 c4f86b3，存在未提交修改）。只读参考，不改动源项目。
 - 已阅读 Review 的 DEVELOPMENT.md、docs/REVIEW_UI_REUSE_SPEC.md、docs/RETROSPECTIVE.md 和综合文档相关章节。
 - 直接迁移 AppTheme、HapticFeedbackUtil、ReviewFrostedAppBar、ReviewPageScaffold、ReviewCard、ReviewPreferenceTile、ReviewSwitchTile、ReviewChoiceTile、AppSectionCard。导航保留标准 M3 分支并复用 Review 的可选液态玻璃悬浮栏实现；第三方包及许可文件保存在 packages/liquid_glass_widgets。
-- BKS 为用户指定的 D:/Download/backup/infinitycm.bks；密码只在被忽略的本机签名配置中使用，不写入文档或受版本管理的源码。签名中间文件排除版本管理；禁止回退 debug 签名。
+- BKS 为用户指定的 本地 BKS 文件（不随仓库发布）；密码只在被忽略的本机签名配置中使用，不写入文档或受版本管理的源码。签名中间文件排除版本管理；禁止回退 debug 签名。
 - 图标使用站点原始文件，不裁切、不重新绘制、不缩放源图；Android 启动器的系统遮罩不由应用控制。
 - 正式 APK 构建通过包名、ABI、签名和对齐校验后，只保留项目根目录的最新版本 APK；清理项目根目录其他 APK 及 previous-releases 下的旧 APK。校验失败时不执行旧包清理。构建脚本日志存放于 build/logs，项目根目录不留日志文件。
 
@@ -44,7 +44,7 @@
 - [x] 原生登录表单及安全提问、系统 WebView Cookie 共享与持久化；原站验证码登录备用入口。
 - [x] 原生发帖/回复/引用、收藏操作、我的帖子/收藏/私信/通知列表代码路径。账户写入只在用户点击后发生，没有使用真实账户发布测试内容；这些路径仍待账户验收。
 - [x] 按账户隔离的阅读历史（最多 200 条）、内容快照、主题/动态色/纯黑/字体/触感/导航设置。
-- [x] 应用图标使用用户指定的 D:/Download/图片/icon17.png 原始 PNG 字节；不重绘、不裁切、不缩放、不增加留白，launcher 输入和 assets/site-icon.png 保持与源文件一致。
+- [x] 应用图标使用用户指定的 用户提供的 icon17.png 原始 PNG 字节；不重绘、不裁切、不缩放、不增加留白，launcher 输入和 assets/site-icon.png 保持与源文件一致。
 - [x] 固定包名与 BKS 同证书签名配置；正式构建仅 arm64-v8a。最低 Android 7.0（API 24）。
 - [ ] 真机登录态、写入、下载和图片手势验收；目前没有 ADB 设备。
 
@@ -98,7 +98,7 @@
 
 ## 1.0.0+1 首版交付记录（2026-10-25；图标已由后续更新替换）
 
-- 文件：D:/App/源社区/源社区_v1.0.0.apk
+- 文件：源社区_v1.0.0.apk
 - 大小：25,797,345 字节（约 24.60 MiB）。
 - 包名 ycoo.net.php；名称源社区；versionName=1.0.0，versionCode=1。
 - minSdk=24，targetSdk=36，compileSdk=36。
@@ -115,7 +115,7 @@
 
 ### 2026-10-25 图标更新
 
-- 按用户最新指定，将 D:/Download/图片/icon17.png 的原始字节复制到 assets/site-icon.png 及所有 mipmap-* / mipmap-nodpi 的 ic_launcher.png；未修改图片像素或尺寸。
+- 按用户最新指定，将 用户提供的 icon17.png 的原始字节复制到 assets/site-icon.png 及所有 mipmap-* / mipmap-nodpi 的 ic_launcher.png；未修改图片像素或尺寸。
 - 源文件与每份应用图标资源 SHA-256：9D50CDD9B4F9ED1667F3D039175DABC4FCF3D2935687D4ABB043CD5CEF58BCAD。
 - 已重新构建签名 ARM64 APK，构建后验证结果见更新的发布记录。
 
@@ -124,8 +124,8 @@
 
 ## 图标更新版 APK（2026-10-25）
 
-- 按用户指定图片 D:/Download/图片/icon17.png 更新应用图标。源图、assets/site-icon.png 和全部 mipmap 密度及 nodpi 的 ic_launcher.png SHA-256 均为 9D50CDD9B4F9ED1667F3D039175DABC4FCF3D2935687D4ABB043CD5CEF58BCAD；仅复制原始字节，未改尺寸/像素。
-- 新 APK：D:/App/源社区/源社区_v1.0.0.apk，30796041 字节；SHA-256 9E5BCC0163E0CD39D2CEC43141F1CC8282CAD03455B11880B248D74F38145FEE，release.sha256 已同步。
+- 按用户指定图片 用户提供的 icon17.png 更新应用图标。源图、assets/site-icon.png 和全部 mipmap 密度及 nodpi 的 ic_launcher.png SHA-256 均为 9D50CDD9B4F9ED1667F3D039175DABC4FCF3D2935687D4ABB043CD5CEF58BCAD；仅复制原始字节，未改尺寸/像素。
+- 新 APK：源社区_v1.0.0.apk，30796041 字节；SHA-256 9E5BCC0163E0CD39D2CEC43141F1CC8282CAD03455B11880B248D74F38145FEE，release.sha256 已同步。
 - 离线 Gradle assembleRelease 成功；aapt 确认包名 ycoo.net.php、版本 1.0.0、仅 arm64-v8a；apksigner V2 校验成功；zipalign 16 KiB 校验成功。
 - 重建前的首版 APK 已自动保存在 previous-releases 作为回退。
 - 这是静态包校验；未安装真机检查启动器显示效果。Android 会按设备密度显示图标，资源源图本身未缩放。
@@ -138,7 +138,7 @@
 - 版本升至 1.0.1+2；沿用包名 ycoo.net.php 与指定 BKS 签名，正式 APK 只包含 arm64-v8a。
 - 真实站点对比记录：原 Android UA 的门户和导读响应分别约 71 KB / 170 KB，两个目标列表容器均缺失；Chrome UA 对应响应约 431 KB / 70 KB，分别包含门户 #portal_block_677_content 与导读 #threadlisttableid 下的 .kmlist 条目。请求均为未登录只读页面。
 - 离线 Gradle assembleRelease 构建成功；AAPT 验证包名 ycoo.net.php、versionName 1.0.1 / versionCode 2、仅 arm64-v8a。APK 使用原 BKS 同一证书，签名 V2 校验和 16 KiB zipalign 校验成功。
-- APK：D:/App/源社区/源社区_v1.0.1.apk，30,796,045 字节；SHA-256 B07748004CF01B867B48AE1C3E0F577FD710EAAA681042280C51DD9758CBF74C，与 release.sha256 一致。
+- APK：源社区_v1.0.1.apk，30,796,045 字节；SHA-256 B07748004CF01B867B48AE1C3E0F577FD710EAAA681042280C51DD9758CBF74C，与 release.sha256 一致。
 
 
 ## 1.2.0+5 Review 媒体体验复用（2026-10-25）
@@ -150,7 +150,7 @@
 - 不支持的 iframe/第三方嵌入播放器仍走原站；没有迁移微博账号、HDR、Live Photo、下载、质量选择或缩略胶片栏。站外资源还受其跨域策略和网络可达性影响。
 - dart analyze --format machine lib：通过，无 error；显示的 info 级 const 建议来自现有设置页面。
 - 离线 Gradle assembleRelease 成功（32 秒）；使用临时 ASCII 盘符、Java 17 与已缓存依赖，未生成 debug 包。
-- APK：D:/App/源社区/源社区_v1.2.0.apk，34,220,760 字节；SHA-256 BD4995A3200D0152165DDBD59AEFBF3A1FE2F00BA1450BA2CADA83BF20924F95，release.sha256 已同步。
+- APK：源社区_v1.2.0.apk，34,220,760 字节；SHA-256 BD4995A3200D0152165DDBD59AEFBF3A1FE2F00BA1450BA2CADA83BF20924F95，release.sha256 已同步。
 - AAPT 确认包名 ycoo.net.php、versionName=1.2.0、versionCode=5，native-code 仅 arm64-v8a；ZIP 的 lib/ 条目也仅有 arm64-v8a。
 - apksigner v2 校验成功；签名证书 SHA-256 与指定 BKS 一致：3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975。zipalign -c -P 16 -v 4：Verification successful。
 - 该次重建前相同版本但缺少中途错误反馈的 APK 已保存在 previous-releases/20261025-195332 作为回退。
@@ -163,7 +163,7 @@
 - 排查首页、社区、导读、我的、设置、个性化和论坛列表的上下留白。主标签页按实际 M3/液态玻璃栏的可见高度计算悬浮遮挡净空；使用标准底栏时正文在底栏上方结束，改用 16dp 收尾。通过“我的”打开的设置/个性化页不显示根导航栏，末尾空白从 100dp 收到 24dp。页面顶部采用磨砂栏下方的状态栏 + 工具栏偏移，没有发现重复安全区，保留原有定位。
 - dart analyze --format machine lib：通过，无 error；仅有既存设置页 const 建议。
 - 离线 Gradle assembleRelease 成功（37 秒），仅构建 arm64-v8a。
-- APK：D:/App/源社区/源社区_v1.2.1.apk，34,220,760 字节；SHA-256 DCF357E997BAFF4F45F7D3B8A723DA9069EFC7B85F422BE45385D881171EDAC3，release.sha256 已同步。
+- APK：源社区_v1.2.1.apk，34,220,760 字节；SHA-256 DCF357E997BAFF4F45F7D3B8A723DA9069EFC7B85F422BE45385D881171EDAC3，release.sha256 已同步。
 - AAPT 确认包名 ycoo.net.php、versionName=1.2.1、versionCode=6，native-code 和 ZIP lib/ 条目均仅 arm64-v8a。
 - apksigner v2 校验成功；证书 SHA-256 与指定 BKS 一致：3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975。zipalign -c -P 16 -v 4：Verification successful。
 - 最终构建前同版本的 APK 已保存到 previous-releases/20261025-205638。
@@ -174,7 +174,7 @@
 
 ## 1.3.0+7 首页功能对齐与留白/触感修复（2026-10-26）
 
-- 基准为用户提供的 D:/Download/base.apk；只读取 Lua/JSON，不安装、不执行其更新脚本。功能对照及真实入口见 docs/CLIENT_PARITY.md。
+- 基准为用户提供的 用户提供的 base.apk；只读取 Lua/JSON，不安装、不执行其更新脚本。功能对照及真实入口见 docs/CLIENT_PARITY.md。
 - 修正旧首页契约：参考客户端使用移动版 Comiis pid=28/72/44（推荐/圈子/关注），并非桌面 portal.php。原生解析真实模块和信息流；现场快照有轮播 10、服务 5、热门板块 8、七日榜 15、置顶区 8，数量与顺序以服务端配置为准。信息流保留置顶标记，论坛另外解析 #comiis_displayorder，避免遗漏独立置顶帖；分类元数据沿用 API。
 - 删除重复根侧边栏；原有服务入口归入“我的 → 社区服务”。社区保留分类展开和版区/新帖/精选/热门；导读包含最新/热门/精华/回复/抢沙发。我的补齐原客户端八项内容入口及资料、头像、空间背景、访客、推广等实际页面。
 - 头像使用站点 data/avatar/noavatar.svg 原始资源作为默认和失败回退，不再使用姓名首字占位。移动信息流保留作者、等级、图片、分类、实际计数；帖子图片使用已有 Hero 图库，视频沿用播放器。媒体仍按需加载，不批量预载原图。
@@ -191,7 +191,7 @@
 ### 1.3.0 发布校验
 
 - 离线 Gradle assembleRelease 成功（1 分 3 秒），只构建 android-arm64；Dart 分析无 error/warning，5 项既存 const 提示。
-- APK：D:/App/源社区/源社区_v1.3.0.apk，34,879,505 字节。SHA-256：F7AB20875BC7EEC6C77680BAD20BF63A074219B34CA6B8B3E334720DCDAB93D2，release.sha256 已同步。
+- APK：源社区_v1.3.0.apk，34,879,505 字节。SHA-256：F7AB20875BC7EEC6C77680BAD20BF63A074219B34CA6B8B3E334720DCDAB93D2，release.sha256 已同步。
 - AAPT：包名 ycoo.net.php、版本 1.3.0 / code 7、minSdk 24；ZIP lib/ 条目全部为 arm64-v8a。
 - apksigner V2 验证通过，证书 SHA-256：3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975，与指定 BKS 一致。zipalign -c -P 16 -v 4 成功。
 - 首次 Gradle 命令未将 -Ptarget=lib/main.dart 等参数作为完整字符串传入 PowerShell，导致 .dart 被当作任务；改为每个 -P 参数整体加引号后构建成功。此为调用错误，未更改应用实现。
@@ -211,7 +211,7 @@
 ### 1.3.1 发布校验
 
 - 离线 Gradle assembleRelease 成功（59 秒）；全套 25 项回归通过。Dart 分析无 error/warning，仅 5 项既存 const 提示。
-- APK：D:/App/源社区/源社区_v1.3.1.apk，34,945,041 字节；SHA-256：DCBB04F5BE482F47A0AEB12A20AE75A004B9A25E9282373FC7541B7A825C8994。release.sha256 已同步。
+- APK：源社区_v1.3.1.apk，34,945,041 字节；SHA-256：DCBB04F5BE482F47A0AEB12A20AE75A004B9A25E9282373FC7541B7A825C8994。release.sha256 已同步。
 - AAPT 确认 ycoo.net.php、versionName=1.3.1 / code=8；ZIP lib/ 仅 arm64-v8a。apksigner V2 与指定证书校验成功；16 KiB zipalign 校验成功。
 - 原 1.3.0 APK 保留回退；没有自动安装。真实账户及实际设备体验的验收边界同上。
 
@@ -230,7 +230,7 @@
 ## 1.4.0+10 Review 原生图库与链接分流（2026-10-26）
 
 - 用户明确补充：需要 Review 的原生图片播放器，不能从图库再跳到网页看图；站内帖子原生打开，外链像 Review/Telegram 一样放到内置浏览器。合并前面登录同步与置顶缩略图修复，不单独交付中途 1.3.2。
-- 对照 D:/App/Review/lib/features/detail/presentation/widgets/image_gallery_page.dart、core/widgets/in_app_browser_page.dart、core/services/link_routing_service.dart，以及 Android saveMediaToGallery 实现。Review 源项目只读。
+- 对照 Review 参考项目/lib/features/detail/presentation/widgets/image_gallery_page.dart、core/widgets/in_app_browser_page.dart、core/services/link_routing_service.dart，以及 Android saveMediaToGallery 实现。Review 源项目只读。
 - 直接迁移 Review 的图库玻璃按钮类和 shaders/gallery_glass_button.frag；新文件 lib/core/widgets/review_gallery_glass_button.dart 保留玻璃/磨砂降级路径，只改公共类名、导入与 key。已有 MIT 许可保留。
 - 源社区图库使用 Review 相同的黑底全屏叠层、玻璃返回/保存按钮、页码胶囊、缩略图条、ExtendedImage 手势及 SlidePage 退出机制；双击缩放有插值动画。移除图库的“打开原图网页”按钮，原图在原生查看器中加载。微博数据模型、账号服务、HDR 与 Live Photo 服务不迁入源社区。
 - 图片路由透明，Hero push 捕获当前缩略图已解码帧作为原图加载期间预览，pop 保留图库侧飞行内容；只保留本次打开的一张预览，不整组预载原图。图条按可见项加载低解码尺寸，当前页/图条位置同步，原始图片缩放与重试保留。
@@ -243,7 +243,7 @@
 ### 1.4.0 最终发布校验
 
 - 最后一次源码构建包含网页返回优先核对，离线 assembleRelease 成功（31 秒）；31 项回归全部通过。未生成不同包名或 debug 签名测试包。
-- APK：D:/App/源社区/源社区_v1.4.0.apk，35,013,122 字节。SHA-256：CFC8177927866A8FAF2E30F3B1A4B2E4C512BC953F465C11941FA0121CC55CE8，release.sha256 已同步。
+- APK：源社区_v1.4.0.apk，35,013,122 字节。SHA-256：CFC8177927866A8FAF2E30F3B1A4B2E4C512BC953F465C11941FA0121CC55CE8，release.sha256 已同步。
 - AAPT：ycoo.net.php，versionName=1.4.0 / versionCode=10；ZIP lib/ 仅 arm64-v8a，并确认包含 gallery_glass_button.frag。
 - apksigner V2 通过；证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975，与指定 BKS 相同。zipalign -c -P 16 -v 4 通过。
 - 既有 1.3.1 APK 保留回退；未自动安装。真机网页登录同步、手势/Hero 时序、玻璃 GPU 和 Android 保存相册流程未进行实际设备验收。
@@ -269,7 +269,7 @@
 ### 1.5.0 最终发布校验
 
 - 离线 Gradle assembleRelease 成功（44 秒），最终 44 项回归通过。Dart 分析无 error/warning；仅保留既存 5 项 const 及测试夹具 2 项括号风格提示。
-- APK：D:/App/源社区/源社区_v1.5.0.apk，35,210,446 字节；SHA-256：D2D514E3CCD94696BFCCBC189BB350DF72F4620381B906171CCC7BA560298D62，release.sha256 已同步。
+- APK：源社区_v1.5.0.apk，35,210,446 字节；SHA-256：D2D514E3CCD94696BFCCBC189BB350DF72F4620381B906171CCC7BA560298D62，release.sha256 已同步。
 - AAPT 验证包名 ycoo.net.php、版本 1.5.0 / code 11、minSdk 24；ZIP lib/ 全部 arm64-v8a。
 - apksigner V2 校验通过，证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975，与指定 BKS 一致。16 KiB zipalign 校验通过。
 - 保留 1.4.0 等既有 APK 回退，没有自动安装或执行真实账号写入。农场登录后玩法及第三方云盘上传等剩余适配项不能据打包成功标为完成。
@@ -289,7 +289,7 @@
 ### 1.6.0 最终发布校验
 
 - 最终源码离线 assembleRelease 成功（32 秒），48 项回归全部通过；Dart 分析无 error/warning，仅既存 5 项 const 和测试夹具 2 项括号风格提示。
-- APK：D:/App/源社区/源社区_v1.6.0.apk，35,210,446 字节。SHA-256：6F7D4F51F0047226D00A39F7927A4940DBE2D562E6F1E9974F57F1A3DC63ECC1；release.sha256 已同步。
+- APK：源社区_v1.6.0.apk，35,210,446 字节。SHA-256：6F7D4F51F0047226D00A39F7927A4940DBE2D562E6F1E9974F57F1A3DC63ECC1；release.sha256 已同步。
 - AAPT：ycoo.net.php，versionName=1.6.0 / versionCode=12，minSdk24；ZIP lib/ 仅 arm64-v8a。apksigner V2 成功，证书 SHA-256 为 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975；16KiB zipalign 成功。
 - 保留 1.5.0 等既有 APK 回退，未自动安装。真实账号已解锁正文及系统 WebView 的文件预览仍未真机验收。
 
@@ -306,7 +306,7 @@
 ### 1.6.1 最终发布校验
 
 - 离线 assembleRelease 成功（30 秒），52 项回归通过。Dart 分析无 error/warning，仅既存 7 项风格提示。
-- APK：D:/App/源社区/源社区_v1.6.1.apk，35210446 字节；SHA-256：D643F534EF216CF8A2AAF493A5A64171A030E4B3BBC0314B304507B6ABC04671；release.sha256 已同步。
+- APK：源社区_v1.6.1.apk，35210446 字节；SHA-256：D643F534EF216CF8A2AAF493A5A64171A030E4B3BBC0314B304507B6ABC04671；release.sha256 已同步。
 - AAPT：ycoo.net.php，1.6.1 / code13，minSdk24；ZIP lib/ 仅 arm64-v8a。apksigner V2 与指定 BKS 证书校验通过，16KiB zipalign 通过。
 - 发布当时 1.6.0 APK 暂作回退；后续用户明确要求只保留最新 APK，已在本次整理中删除旧包。未安装到设备。真实图片解码、Hero/手势动画仍需设备验收。
 
@@ -328,7 +328,7 @@
 ### 1.6.2 最终发布校验
 
 - 最终源码离线 assembleRelease 成功（34 秒）；全套 57 项回归通过，包含补充响应超时与会话切换保护。Dart 静态分析无 error/warning，仅 8 项风格提示。过程与校验日志存于 build/logs，根目录没有 .log 文件。
-- APK：D:/App/源社区/源社区_v1.6.2.apk，35,210,442 字节；SHA-256：1DF2153751F36EE2EEDEE3A3F8C8D40DEC8A7C727676D88CC02E602CBA921B77，release.sha256 已同步。
+- APK：源社区_v1.6.2.apk，35,210,442 字节；SHA-256：1DF2153751F36EE2EEDEE3A3F8C8D40DEC8A7C727676D88CC02E602CBA921B77，release.sha256 已同步。
 - AAPT：ycoo.net.php，versionName=1.6.2 / versionCode=14，minSdk24；ZIP lib/ 仅 arm64-v8a。apksigner 校验通过，证书 SHA-256：3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975，与指定 BKS 一致；16KiB zipalign 校验通过。
 - 按用户要求，新包全部校验成功后删除根目录旧版 1.6.1 APK，只保留最新正式包；未自动安装，未执行真实账户写入或真机网络验收。
 - 本次确认 aapt 对 Windows 中文绝对路径也会报 Illegal byte sequence；与编译相同，APK 身份、签名和对齐校验全程使用临时 ASCII 盘符，再由 PowerShell 复制到中文发布文件名。校验路径失败不代表 APK 损坏，不应重复重编译。
@@ -346,7 +346,7 @@
 
 - 我的关注帖子卡片将作者状态显示为“已关注”；该按钮沿用现有用户资料入口。三个列表和页面顶部边界有组件回归，覆盖各子页请求参数、账号门槛、切换、独立缓存与分界位置。
 - 最终源码离线 assembleRelease 成功（28 秒），全套 59 项回归通过，Dart 静态分析无 error/warning。过程和校验日志保存在 build/logs。
-- APK：D:/App/源社区/源社区_v1.7.0.apk，35,210,446 字节；SHA-256：C58C899CCDEB2D3CE3427074CC1E2402673EC93491B2D6302A369338FB0D7D24，release.sha256 已同步。
+- APK：源社区_v1.7.0.apk，35,210,446 字节；SHA-256：C58C899CCDEB2D3CE3427074CC1E2402673EC93491B2D6302A369338FB0D7D24，release.sha256 已同步。
 - AAPT：ycoo.net.php，versionName=1.7.0 / versionCode=15，minSdk24；ZIP lib/ 仅 arm64-v8a。apksigner 校验通过，证书 SHA-256 为 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975，与指定 BKS 相同；16KiB zipalign 校验通过。验证后按用户要求删除根目录旧版 1.6.2 APK。
 - 未连接真机或使用真实登录账户；模拟列表测试不能证明三个子页的真实授权数据结构和分页结果。构建成功不代表这些账号数据已验收。
 
@@ -362,7 +362,7 @@
 ### 1.7.1 最终发布校验
 
 - 离线 assembleRelease 成功（30 秒），全套 59 项回归通过；检查了正常字号和 2 倍字体缩放下的首页顶栏布局。Dart 静态分析无 error/warning，过程与校验日志保存在 build/logs。
-- APK：D:/App/源社区/源社区_v1.7.1.apk，35,210,446 字节；SHA-256：9B0DD3777B8C2EA7216B5F200496E7F5EF58A2E0FD2CE401C6B6CB3326B4ACE1，release.sha256 已同步。
+- APK：源社区_v1.7.1.apk，35,210,446 字节；SHA-256：9B0DD3777B8C2EA7216B5F200496E7F5EF58A2E0FD2CE401C6B6CB3326B4ACE1，release.sha256 已同步。
 - AAPT：ycoo.net.php，1.7.1 / code 16，minSdk 24；ZIP lib/ 仅 arm64-v8a。apksigner 与指定 BKS 证书校验通过，16KiB zipalign 校验通过。新包通过校验后按用户要求删除旧版 1.7.0 APK。
 - 未安装到真机；两级分栏的实际视觉效果、登录后的关注列表和不同厂商系统字体渲染仍需设备验收。
 
@@ -380,7 +380,7 @@
 - Dart 静态分析完成，无 error；全量 Flutter 回归 65/65 通过，包含启动会话等待、重试、游客与分栏切换用例。
 - 离线 `assembleRelease` 成功。AAPT 确认包名 `ycoo.net.php`、版本 `1.7.2` / code `17`、minSdk 24；APK 中 native library 仅 `arm64-v8a`。
 - `apksigner` 验签及指定 BKS 证书指纹通过；16 KiB `zipalign` 检查通过。
-- 正式包：`D:/App/源社区/源社区_v1.7.2.apk`，35,210,446 字节；SHA-256：`4EFDF1CBAD9FE9A88E6E82FB666F413B5D258AF0E70E6910BD86A59C513710AA`，已同步 `release.sha256`。新包校验完成后按要求删除项目根目录旧版 1.7.1 APK；根目录仅保留当前正式包。构建与检查日志保存在 `build/logs`。
+- 正式包：`源社区_v1.7.2.apk`，35,210,446 字节；SHA-256：`4EFDF1CBAD9FE9A88E6E82FB666F413B5D258AF0E70E6910BD86A59C513710AA`，已同步 `release.sha256`。新包校验完成后按要求删除项目根目录旧版 1.7.1 APK；根目录仅保留当前正式包。构建与检查日志保存在 `build/logs`。
 - 未连接 Android 真机；真实登录、启动后关注内容与系统 WebView 会话行为仍需设备验收。
 
 ## 1.7.3+18 帖子卡片内容与密度（2026-10-27）
@@ -393,7 +393,7 @@
 
 - Dart 静态分析无 error/warning；Flutter 全量回归 67/67 通过。新增检查覆盖移动网页的等级颜色、性别、认证标识及缓存往返，同源限制，以及深色/浅色、正常/两倍字号的卡片布局与正文到标签间距。
 - 离线 `assembleRelease` 成功；AAPT 确认包名 `ycoo.net.php`、版本 `1.7.3` / code `18`、minSdk 24。APK 中原生库仅 `arm64-v8a`；签名证书匹配指定 BKS，16 KiB zipalign 校验通过。
-- 正式包：`D:/App/源社区/源社区_v1.7.3.apk`，35,341,754 字节；SHA-256：`5E5FA13972795624BB0C95C3340368853349E28860235EA433767BB47D7FE286`。新包与构建产物哈希一致，检查通过后删除根目录旧版 1.7.2 APK；日志保存在 `build/logs`。
+- 正式包：`源社区_v1.7.3.apk`，35,341,754 字节；SHA-256：`5E5FA13972795624BB0C95C3340368853349E28860235EA433767BB47D7FE286`。新包与构建产物哈希一致，检查通过后删除根目录旧版 1.7.2 APK；日志保存在 `build/logs`。
 - 没有进行真机视觉或真实账号验收；旧缓存中新增加的作者标识在刷新对应列表后显示。
 ## 1.7.4+19 关注按钮和等级颜色（2026-10-27）
 
@@ -404,7 +404,7 @@
 
 - Dart 静态分析无 error/warning。完整回归 69/69 通过；最后增加对未知等级样式不猜测颜色的边界处理后，帖子卡片相关 9 项回归再次通过，包括站点默认色、同等级不同用户组颜色、旧缓存补色、过期会话响应和胶囊可点击区域。
 - 最终源码离线 `assembleRelease` 成功。AAPT 确认包名 `ycoo.net.php`、版本 `1.7.4` / code `19`、minSdk 24；APK 原生库仅 `arm64-v8a`。签名证书匹配指定 BKS，16 KiB zipalign 校验通过。
-- 正式包：`D:/App/源社区/源社区_v1.7.4.apk`，35,341,754 字节；SHA-256：`80A97D6C519B2889B5B61993CF60F0B52491DBE980F3552813A05B97422C0024`。新包与构建产物哈希一致，检查通过后删除根目录旧版 1.7.3 APK；日志保存在 `build/logs`。
+- 正式包：`源社区_v1.7.4.apk`，35,341,754 字节；SHA-256：`80A97D6C519B2889B5B61993CF60F0B52491DBE980F3552813A05B97422C0024`。新包与构建产物哈希一致，检查通过后删除根目录旧版 1.7.3 APK；日志保存在 `build/logs`。
 - 未进行真机视觉或真实账号验收。旧缓存中首屏以外尚未补到颜色的帖子保持中性色，刷新列表后按站点响应显示颜色。
 ## 1.7.5+20 旧等级颜色与个人统计稳定显示（2026-10-27）
 
@@ -416,7 +416,7 @@
 
 - Dart 静态分析无 error/warning；Flutter 全量回归 75/75 通过，覆盖普通等级默认色、多个缓存页的不同用户组原色、过期会话拒绝、个人统计缓存及无缓存布局、网络失败与 UID 不匹配。
 - 离线 `assembleRelease` 成功。AAPT 确认包名 `ycoo.net.php`、版本 `1.7.5` / code `20`、minSdk 24，APK 原生库仅 `arm64-v8a`。签名证书与指定 BKS 匹配，16 KiB zipalign 校验通过。
-- 正式包：`D:/App/源社区/源社区_v1.7.5.apk`，35,341,754 字节；SHA-256：`129BA6B16526B262D38D426878B3702F336C0CE03B4EBA9A05B4974DB292CCF4`。复制后的哈希与构建产物一致，检查通过后删除根目录旧版 1.7.4 APK；日志保存在 `build/logs`。
+- 正式包：`源社区_v1.7.5.apk`，35,341,754 字节；SHA-256：`129BA6B16526B262D38D426878B3702F336C0CE03B4EBA9A05B4974DB292CCF4`。复制后的哈希与构建产物一致，检查通过后删除根目录旧版 1.7.4 APK；日志保存在 `build/logs`。
 - 未连接真机或使用真实账号验收。首次没有统计缓存时先显示占位符；成功取得本人资料后才缓存数字。旧帖子若缺失 UID 或站点离线，特殊组颜色无法确认时暂用默认橙色。
 ## 1.8.0+21 个人页图标与站点分栏（2026-10-27）
 
@@ -428,7 +428,7 @@
 
 - Dart 静态分析无 error/warning；完整 Flutter 回归 79/79 通过，覆盖原生导航同页切换、未识别脚本不误转换、圈子导航结构、普通和两倍字号下磨砂边界、社区分栏与内容间距，以及既有签到、购买和登录回归。
 - 离线 `assembleRelease` 成功。AAPT 确认包名 `ycoo.net.php`、版本 `1.8.0` / code `21`、minSdk 24，APK 原生库仅 `arm64-v8a`；签名证书与指定 BKS 匹配，16 KiB zipalign 校验通过。
-- 正式包：`D:/App/源社区/源社区_v1.8.0.apk`，35,342,130 字节；SHA-256：`262D00B35E735FB6BF3D4806F98447D46F44090CE23636CD4A9ECF18C1811289`。复制后哈希与构建产物一致，检查通过后删除根目录旧版 1.7.5 APK；日志保存在 `build/logs`。
+- 正式包：`源社区_v1.8.0.apk`，35,342,130 字节；SHA-256：`262D00B35E735FB6BF3D4806F98447D46F44090CE23636CD4A9ECF18C1811289`。复制后哈希与构建产物一致，检查通过后删除根目录旧版 1.7.5 APK；日志保存在 `build/logs`。
 - 未将新包安装到设备，也未用真实登录账号验收好友、心情、圈子的全部站点响应；仅经游客样本和合成网页验证，未知站点脚本仍不能假定已适配。
 ## “我的”功能适配进行中（2026-10-27）
 
@@ -467,7 +467,7 @@
 ## 1.0.0+25 Review 图片播放器行为复用（2026-10-28）
 
 - 纠正前次误判：仅在 ListView 两侧加留白使整组居中，并不符合 Review 实际的当前缩略图居中机制。后续禁止再用固定条目宽度/偏移公式替代 PageController 分页定位。
-- 对照 D:/App/Review/lib/features/detail/presentation/widgets/image_gallery_page.dart，迁移普通图片连廊的 PageController(viewportFraction=0.16)、64dp 高度、底部安全区+32dp、选中白框与未选中遮罩。
+- 对照 Review 参考项目/lib/features/detail/presentation/widgets/image_gallery_page.dart，迁移普通图片连廊的 PageController(viewportFraction=0.16)、64dp 高度、底部安全区+32dp、选中白框与未选中遮罩。
 - 缩略图拖动时按小数页位置直接同步主图，松手后两端在 120ms 内共同吸附；主图手势接管时取消旧连廊惯性，以操作序号丢弃过时的动画完成回调。隐藏控件时保持控制器挂载，防止重新显示后重置选中项。
 - 同步 Review 的原始指针点击判定与双击抑制、中间点击显示/隐藏、两侧点击返回、横向滑动关闭、140ms 控件淡入淡出和260ms 分段缩放；缩放最小1，最大8，长图首次双击3.5倍，普通图2.5倍，后续6倍再复原。仅当前页启用 Hero，避免返回时相邻图片同时飞回。
 - 版本名保持用户指定的1.0.0，内部 versionCode 25。
@@ -494,7 +494,7 @@
 - 图片播放器、缩略图连廊、手势与 Hero 转场没有修改。
 - 定向测试覆盖浅色镜片样式和深色回归，2/2 通过；目标文件 `dart analyze --format machine` 通过。
 - 离线 ARM64 正式构建成功。AAPT 确认包名 `ycoo.net.php`、versionName `1.0.0` / versionCode `27`、仅 `arm64-v8a`；APK v2 签名匹配指定 BKS 证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975`，16 KiB zipalign 校验通过。
-- 正式包：`D:/App/源社区/源社区_v1.0.0.apk`，35,409,206 字节，SHA-256 `DD0D7B3CA74215BECA0717964CF77191C751DBCDE397D8B327A7C465291DA3D1`；新包验证通过后已替换根目录旧包。Gradle 日志位于 `build/logs`。
+- 正式包：`源社区_v1.0.0.apk`，35,409,206 字节，SHA-256 `DD0D7B3CA74215BECA0717964CF77191C751DBCDE397D8B327A7C465291DA3D1`；新包验证通过后已替换根目录旧包。Gradle 日志位于 `build/logs`。
 - 未安装到设备；玻璃效果的实际观感与 GPU 表现仍待真机确认。
 
 ## 1.0.0+28 浅色液态玻璃悬浮底栏阴影（2026-10-28）
@@ -502,25 +502,25 @@
 - 仅将浅色液态玻璃悬浮底栏外壳 `shadowElevation` 设为 0.55；深色仍为 0，其他玻璃胶囊与图片播放器均未修改。
 - 定向浅色/深色底栏测试 2/2 通过，目标 Dart 分析通过。
 - 离线 ARM64 正式构建成功。AAPT 确认包名 `ycoo.net.php`、versionName `1.0.0` / versionCode `28`、仅 `arm64-v8a`；APK v2 签名匹配指定 BKS 证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975`，16 KiB zipalign 校验通过。
-- 正式包 `D:/App/源社区/源社区_v1.0.0.apk`，35,409,206 字节，SHA-256 `9C3F8B3C6279E13C6FCDA7A5F5D0DFE46A303F49FEBF4F34BB3F12088FBDE587`；校验成功后替换了旧 APK，根目录仅保留最新版。Gradle 日志位于 `build/logs`。
+- 正式包 `源社区_v1.0.0.apk`，35,409,206 字节，SHA-256 `9C3F8B3C6279E13C6FCDA7A5F5D0DFE46A303F49FEBF4F34BB3F12088FBDE587`；校验成功后替换了旧 APK，根目录仅保留最新版。Gradle 日志位于 `build/logs`。
 - 未安装到设备；真机阴影观感与 GPU 表现待设备确认。
 
 ## 1.0.1+29 Lurk 悬浮底栏行为与尺寸（2026-10-28）
 
-- 对照 `D:/App/Lurk/lib/features/home/presentation/main_scaffold.dart`：悬浮栏宽度采用 `min(440, 屏幕宽度 - 40) × 8/9`；点击切换禁用 indicatorPinchStrength 和 indicatorExpansion，只滑动选中镜片。未迁移 Lurk 的长按/拖动果冻手势。
+- 对照 `Lurk 参考项目/lib/features/home/presentation/main_scaffold.dart`：悬浮栏宽度采用 `min(440, 屏幕宽度 - 40) × 8/9`；点击切换禁用 indicatorPinchStrength 和 indicatorExpansion，只滑动选中镜片。未迁移 Lurk 的长按/拖动果冻手势。
 - 只调整 ReviewNavigationBar 的悬浮导航和相应设置/测试；图库、图片播放器及其他玻璃胶囊保持原样。
 - 定向测试覆盖点击镜片参数、浅/深色回归及 Lurk 尺寸，2/2 通过；目标 Dart 分析通过。
 - 离线 ARM64 正式构建成功。AAPT 确认包名 `ycoo.net.php`、versionName `1.0.1` / versionCode `29`、仅 `arm64-v8a`；APK v2 签名匹配指定 BKS 证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975`，16 KiB zipalign 校验通过。
-- 正式包 `D:/App/源社区/源社区_v1.0.1.apk`，35,409,210 字节，SHA-256 `1E72E74260B85A4C6B162B12E428FE4004ACB1A5BCCC9A0EBA836F6014BC6DC0`；新包验证成功后删除根目录旧 APK，当前仅留此包。Gradle 日志位于 `build/logs`。
+- 正式包 `源社区_v1.0.1.apk`，35,409,210 字节，SHA-256 `1E72E74260B85A4C6B162B12E428FE4004ACB1A5BCCC9A0EBA836F6014BC6DC0`；新包验证成功后删除根目录旧 APK，当前仅留此包。Gradle 日志位于 `build/logs`。
 - 未安装到设备；底栏触感/液态效果的真机表现仍待确认。
 
 ## 1.0.2+30 主底栏平移切页（2026-10-28）
 
-- 参考 `D:/App/Lurk/lib/features/home/presentation/main_scaffold.dart`：主底栏不同页面间使用 260ms `easeOutCubic` 双向平移；按页签顺序及 RTL 调整方向，中途再次切页从当前偏移连续开始。
+- 参考 `Lurk 参考项目/lib/features/home/presentation/main_scaffold.dart`：主底栏不同页面间使用 260ms `easeOutCubic` 双向平移；按页签顺序及 RTL 调整方向，中途再次切页从当前偏移连续开始。
 - 保留访问后懒加载和页面状态；仅当前页接收指针，转场期间维持前后页 ticker。尊重系统减少动态效果设置，关闭动画时直接切换。内部分栏与图库转场不变。
 - 定向 `following_tabs_test.dart` 8/8 通过，目标 Dart 分析无错误；转场断言覆盖新旧页面移动与返回首页不重复加载信息流。
 - 发布脚本创建临时 subst 路径时被 Windows 拒绝；改用本机指向同一工作区的 ASCII `V:` 路径，执行离线 Gradle `assembleRelease` 成功。日志：`build/logs/release-20261028-home-tab-slide.log`。
-- APK：`D:/App/源社区/源社区_v1.0.2.apk`，35,409,210 字节，SHA-256 `9F4CFDC8F945BDA6BFC0BBBAF73EFB9E8CB6B99AE4CABB7C2CE02D809C515534`，`release.sha256` 已同步。
+- APK：`源社区_v1.0.2.apk`，35,409,210 字节，SHA-256 `9F4CFDC8F945BDA6BFC0BBBAF73EFB9E8CB6B99AE4CABB7C2CE02D809C515534`，`release.sha256` 已同步。
 - AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.2` / versionCode `30`、minSdk 24；APK 原生库仅 `arm64-v8a`。签名 v2 通过且证书 SHA-256 与指定 BKS 一致；16 KiB zipalign 校验通过。校验完成后根目录及 `previous-releases` 中旧 APK 已清理，只保留当前正式包。
 - 未安装到设备；尚未进行真机页面切换视觉验收。
 
@@ -529,19 +529,19 @@
 - 帖子正文图片从 Discuz 的 `data-src` / `src` 选择可用预览源，图库仍以 `file` / `zoomfile` 等原图源作为高清主图；无单独预览时沿用原图地址。Hero 起点和底部缩略连廊优先使用预览图。
 - Review 式全屏图库在原图解码期间保留已捕获的 Hero 帧；没有捕获帧但存在独立缩略图时显示该预览，原图加载完成后才替换，避免黑底等待。
 - 定向 `content_regression_test.dart` 回归通过，覆盖 Discuz `src` 预览、`file` 原图传递和加载中的预览帧；改动文件 `dart analyze --format machine` 无诊断。
-- 首次测试命令从中文工作路径触发本机 Impeller include 路径乱码；按既有构建约定改从 `V:\` ASCII 映射运行，测试通过。未修改 shader、依赖或播放器动画。
+- 首次测试命令从中文工作路径触发本机 Impeller include 路径乱码；按既有构建约定改从 ASCII 临时映射运行，测试通过。未修改 shader、依赖或播放器动画。
 - 离线 ARM64 `assembleRelease` 成功（36 秒）；Gradle 日志为 `build/logs/release-1.0.3-image-preview.log`。
-- APK：`D:/App/源社区/源社区_v1.0.3.apk`，35,409,210 字节，SHA-256 `55068FC3A8615BDB4251407069FF88E2FA64254BA9776BD114BADE55CEC40099`，`release.sha256` 已同步。
+- APK：`源社区_v1.0.3.apk`，35,409,210 字节，SHA-256 `55068FC3A8615BDB4251407069FF88E2FA64254BA9776BD114BADE55CEC40099`，`release.sha256` 已同步。
 - AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.3` / versionCode `31`、minSdk 24，ZIP 中原生库仅 `arm64-v8a`。APK v2 签名及证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 通过；16 KiB zipalign 校验成功。
 - 验证完成后删除旧版根目录 APK 和 `previous-releases` 下旧 APK，只保留当前正式包。未安装到真机；设备图像切换观感尚未现场验收。
 
 ## 1.0.4+32 GreenNote 图库玻璃转场优化（2026-10-28）
 
-- 对照 `D:/App/GreenNote/lib/features/feed/image_gallery_page.dart`：图库进场时玻璃控件透明且不可交互；液态玻璃开启时，返回转场移除顶部工具栏和缩略图玻璃控件子树，结束后页面随路由销毁。不开启液态玻璃时只按原有淡出行为处理。
+- 对照 `GreenNote 参考项目/lib/features/feed/image_gallery_page.dart`：图库进场时玻璃控件透明且不可交互；液态玻璃开启时，返回转场移除顶部工具栏和缩略图玻璃控件子树，结束后页面随路由销毁。不开启液态玻璃时只按原有淡出行为处理。
 - 图片画布、Hero 几何、缩略图居中及播放器手势不变；控件不在退场时参与玻璃渲染。
 - `test/gallery_layout_test.dart`：8/8 通过，覆盖进场透明/禁用交互、完成后恢复和返回时移除控件；改动 Dart 文件定向 analyze 无诊断。
 - 版本升至 `1.0.4+32`；离线 ARM64 `assembleRelease` 成功（1 分 24 秒）。AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.4` / versionCode `32`、minSdk 24，APK 和 ZIP 原生库仅含 `arm64-v8a`。
-- APK：`D:/App/源社区/源社区_v1.0.4.apk`，35,409,206 字节，SHA-256 `040AB7C5E099F5A2BBCD7CA44834D0AC8835B92331433EBBB700305A6B11B889`；`release.sha256` 已同步。复制包与构建产物哈希一致。
+- APK：`源社区_v1.0.4.apk`，35,409,206 字节，SHA-256 `040AB7C5E099F5A2BBCD7CA44834D0AC8835B92331433EBBB700305A6B11B889`；`release.sha256` 已同步。复制包与构建产物哈希一致。
 - APK v2 签名验证通过；证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 与指定 BKS 一致。`zipalign -c -P 16 -v 4` 校验成功。
 - 验证完成后删除根目录旧版 APK 及 `previous-releases` 下旧 APK，只保留当前正式包。Gradle 日志位于 `build/logs/release-1.0.4-gallery-glass-transition.log`。
 - 未安装到真机；退场转场的 GPU 帧耗时尚未在设备上测量。
@@ -553,7 +553,7 @@
 - 扩展 `test/gallery_layout_test.dart` 像素回归：固定过期动画值并改变 Hero 视口时，图片像素仍跟随视口；视口不变而旧动画值变化时，像素保持一致。图库定向检查 8/8 通过，`lib/pages/media.dart` 与测试文件定向 analyze 无诊断。
 - 图库打开转场时长设为 330ms，返回保持 200ms；沿用现有淡入曲线及转场实现。
 - 版本升至 `1.0.5+33`。ARM64 Release 构建成功（约 9 分 17 秒）。AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.5` / versionCode `33`、minSdk 24，APK 原生库仅含 `arm64-v8a`。
-- APK：`D:/App/源社区/源社区_v1.0.5.apk`，34,985,289 字节，SHA-256 `795CC4A8B312E3FB2D1AC5346D1C1B9730E0E496D64C4AAA8AF518500CD2A845`，`release.sha256` 已同步。签名 v2 验证通过，证书 SHA-256 与指定 BKS 一致；`zipalign -c -P 16 -v 4` 校验成功。新包核验后删除旧 APK，项目根目录只保留此包。
+- APK：`源社区_v1.0.5.apk`，34,985,289 字节，SHA-256 `795CC4A8B312E3FB2D1AC5346D1C1B9730E0E496D64C4AAA8AF518500CD2A845`，`release.sha256` 已同步。签名 v2 验证通过，证书 SHA-256 与指定 BKS 一致；`zipalign -c -P 16 -v 4` 校验成功。新包核验后删除旧 APK，项目根目录只保留此包。
 - 构建脚本创建嵌套临时盘符被 Windows 拒绝；从已有 `V:` ASCII 映射直接运行 Flutter ARM64 发布构建成功。项目根目录遗留的 Flutter 日志已移至 `build/logs`。
 - 未安装到设备；连续反向开合、330ms 打开时长的实际观感及帧耗时尚未真机验收。
 
@@ -562,7 +562,7 @@
 - 根据底栏/帖子操作图标乱码及图片播放器顶部按钮消失的截图排查，旧发布构建将 `MaterialIcons-Regular.otf` 裁剪到 7,048 字节；液态玻璃组件通过参数接收的图标字形因此不完整。正式构建改用 `--no-tree-shake-icons`，播放器和玻璃组件代码未改。
 - `tool/build_release.ps1` 已同步禁用图标字体裁剪。Release APK 内完整 Material 图标字体为 1,645,184 字节；`FontManifest.json` 指向该资源。
 - 版本升至 `1.0.6+34`。ARM64 Release 构建成功（451 秒）；AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.6` / versionCode `34`，原生库仅 `arm64-v8a`。
-- APK：`D:/App/源社区/源社区_v1.0.6.apk`，35,954,942 字节，SHA-256 `D50C97071DC57DFA8262751980D4C15A85B9F3F276617850A8BB2D1DE97827C3`，`release.sha256` 已同步。签名 v2 验证通过，证书 SHA-256 与指定 BKS 一致；16 KiB zipalign 检查通过。验证后已删除旧 APK，仅保留最新正式包。
+- APK：`源社区_v1.0.6.apk`，35,954,942 字节，SHA-256 `D50C97071DC57DFA8262751980D4C15A85B9F3F276617850A8BB2D1DE97827C3`，`release.sha256` 已同步。签名 v2 验证通过，证书 SHA-256 与指定 BKS 一致；16 KiB zipalign 检查通过。验证后已删除旧 APK，仅保留最新正式包。
 - 构建日志：`build/logs/release-1.0.6-icons.log`。未安装到设备，底栏及图库控件的实际显示尚未真机验收。
 
 ## 1.0.7+35 图库顶部玻璃按钮进场对齐（2026-10-28）
@@ -571,5 +571,87 @@
 - 保留 `StackFit.expand` 下顶部 `Positioned(top: 0, left: 0, right: 0)`，防止工具栏被拉伸成整屏高度；主图、Hero、缩略图居中和图片播放器动画不变。
 - `test/gallery_layout_test.dart` 图库定向测试 8/8 通过；`dart analyze lib/pages/media.dart test/gallery_layout_test.dart` 无诊断。
 - ARM64 Release 构建成功（457 秒）。AAPT 确认包名 `ycoo.net.php`、应用名“源社区”、versionName `1.0.7` / versionCode `35`、仅 `arm64-v8a`；Material 图标字体完整（1,645,184 字节）。
-- APK：`D:/App/源社区/源社区_v1.0.7.apk`，SHA-256 `2F1570B3FEDB7A56CA8CF6E8617383BA1F843E9E26875443E9E90F988D471FC6`；`release.sha256` 已同步。APK v2 签名证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 匹配指定 BKS；16 KiB zipalign 校验通过。验证后删除根目录旧版 APK，当前仅留该正式包。
+- APK：`源社区_v1.0.7.apk`，SHA-256 `2F1570B3FEDB7A56CA8CF6E8617383BA1F843E9E26875443E9E90F988D471FC6`；`release.sha256` 已同步。APK v2 签名证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 匹配指定 BKS；16 KiB zipalign 校验通过。验证后删除根目录旧版 APK，当前仅留该正式包。
 - 构建日志位于 `build/logs/release-1.0.7-gallery-toolbar-alignment.log`。未安装到真机；按钮玻璃位置的真实设备动画观感仍待设备验收。
+
+
+## 1.1.0+36 启动时后台自动签到（2026-11-03）
+
+- 设置首页“偏好与功能”增加 Review/M3 自动签到开关，默认关闭并沿用已有 autoSignIn 值；从阅读子页移出，开启不强制导航到登录页。
+- 启动时等待现有 syncSession 完成后读取签到页状态，仅未签到且凭据有效时复用原生 signNow 请求提交。页面只作为后台数据请求，不创建 WebView 或执行网页自动化；不弹 Snackbar、对话框或切换当前页面。
+- 不再用本机日期缓存代替服务器今日状态；并发检查共用一个任务，结束（包括失败）释放。读取期间若账号/会话切换、退出登录或关闭开关，停止提交；网络或站点验证失败静默结束，不盲目重试写入，下次启动重新检查。
+- SignData 与 signNow 移到 Site 数据层供原生签到页和自动流程共用；未识别签到按钮时返回空状态，防止把验证/登录页面当成未签到。
+- 定向 reading_tools/native_site 回归 20/20 通过，涵盖关闭/游客不请求、服务端已签到不提交、未签到提交、并发仅一次、切换账号/关闭后不提交、失败后可重新检查和手动签到兼容；Dart 分析无 error/warning（既有风格 info）。
+- 关于页面与 README 版本同步为 1.1.0+36。正式 ARM64 构建及包体验证结果见下方；未执行真实账号签到或真机安装。
+
+### 1.1.0 最终发布校验
+
+- ARM64 Release 构建成功（347.5 秒），日志 `build/logs/release-1.1.0-auto-sign.log`。包名 `ycoo.net.php`、versionName `1.1.0`、versionCode `36`；APK ZIP 原生库仅 `arm64-v8a`，MaterialIcons 完整字体 1,645,184 字节。
+- APK：`源社区_v1.1.0.apk`，35,954,938 字节；SHA-256 `732E249A2C0996296F8F078959704BE07D30821A6115063A33CE626A1735274D`。APK v2 签名证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 匹配指定 BKS，16 KiB zipalign 检查通过。
+- 复制后哈希一致才清理旧 APK，根目录只保留 1.1.0；release.sha256 已同步。源码回退基线为 Git f41cbcb，本次改动保留在工作区。
+- 自动检查通过不等于真实账号签到验收；未安装到设备，未使用真实账号执行签到。站点登录过期、网络失败或要求验证时静默结束，下次启动重新检查。
+
+## 1.2.0+37 用户个人主页与姓名入口（2026-11-03）
+
+- 对照用户长图及站点公开 UID 34747 的移动资料页、桌面资料页和 profile API 进行适配。真实公开字段包含背景、头像、Lv.7/大会员、勋章、签名、530 主题/325 回复、关注/粉丝/好友/日志/相册/心情/人气、积分和扩展积分、在线/注册/访问时间；显示数据来自每次请求，不硬编码样例数字。离线夹具只保留公开资料字段和页面片段，不保存 Cookie、formhash、密码或 API 会话数据。
+- 新增 data/profile.dart 和 pages/profile.dart。旧 thread.dart 导出保持各调用点兼容；首页、关注、社区/导读/搜索和个人帖子共用 TopicTile，用户名/等级区域与头像一样进入原生个人主页；回复、签到排行和用户列表原有整行入口继续复用。
+- 页面按封面资料、图标/文字四分栏、资料详情和统计、底部互动栏组织。复用 M3 主题/按钮/Chip/列表与 ReviewFrostedBackdrop；分栏在封面下方吸顶，磨砂边界随字号与实际高度计算。普通字号左右对齐资料，大字号纵向排列，统计网格可降为双列，安全区保护底部操作。
+- 资料、帖子、日志、相册按需读取并独立缓存，帖子包含主题/回复筛选与加载更多；移动信息流及标准帖子链接布局均可解析。相册封面与标题分开链接时按 albumid 合并，日志和相册详情沿用原生站内内容页及现有图片浏览器。访客或权限限制按站点登录/提示处理，不把登录页误判成空内容。
+- 原生显示勋章图片和详情弹窗、站内勋章中心、个人签名、可扫码的主页二维码及复制链接；统计链接进入对应内容/关注/粉丝/好友/心情/访客列表。详情只展示已公开的资料与扩展积分，不遍历展示 profile API 的其它隐私字段。
+- 关注/取消关注、加好友、打招呼、聊天和拉黑使用实时认证页面给出的实际同源链接和 NativeSitePage 原生表单，不构造认证散列或直接执行网页脚本。只接受当前目标用户和对应操作；跨站或不同目标链接被拒绝，写入动作先确认，再由既有表单处理真实服务端结果。站点不提供当前账号可用链接时明确提示，不能冒充成功。
+- 修复通用 URL 路由过去将任何 uid 参数都当作主页的问题：只有空间根链接或 do=profile 才进入个人主页，日志/相册/内容/好友动作保留其真实目的地。openWeb 与 routeLink 共用此判定。
+- 并发切换分栏各自加载；账号/会话变化时清空内容缓存，旧请求不能覆盖新账号数据，失败可手动重试。不会批量请求四个分栏，也不会自动执行关系写入。
+- 相关 profile/native_site/content_regression/my_dashboard/reading_tools 回归 40 项通过；最后补充相册合并后主页定向 11 项全部通过，目标 Dart 分析无诊断。覆盖真实资料字段、用户名点击、同源与目标限制、内容路由、标准帖子行、相册封面合并、二维码、1x/2x 字号与吸顶分栏位置、在途切页。
+- 设置中的后台自动签到改动继续保留；pubspec、关于页面和 README 同步 1.2.0+37。未用真实登录账号执行关注/好友/招呼/私信/拉黑，未安装到真机；登录态下页面内容和站点限制仍需设备实际验收。构建与包体核验见下方。
+
+### 1.2.0 最终发布校验
+
+- ARM64 Release 构建成功（253.3 秒），日志 `build/logs/release-1.2.0-profile.log`。包名 `ycoo.net.php`、versionName `1.2.0`、versionCode `37`；APK 原生库仅 `arm64-v8a`，MaterialIcons 字体完整（1,645,184 字节）。
+- APK：`源社区_v1.2.0.apk`，36,086,014 字节。SHA-256 `D260693FA04C8D231A5B0710DA422B4BE925568FE16AA4A5628AF177437C5346`；复制后与构建产物一致，release.sha256 已同步。
+- APK v2 签名验证通过，证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 匹配指定 BKS；16 KiB zipalign 通过。校验完成后清理根目录旧 APK，只保留 1.2.0。源码保留在工作区，基线 f41cbcb 可供回退。
+- 未安装到真机；公开资料读取、组件回归和包体校验不能代替登录后的内容、权限、表单写入与真实设备观感验收。
+
+## 1.2.1+38 个人主页身份显示与紧凑排版（2026-11-03）
+
+- 用户截图显示管理员头像回退、等级空徽章、统计错行、底部按钮折行及功能区变成四排。只改个人主页模型/布局，保留后台自动签到和之前的原生主页功能。
+- 根因一：移动资料页给出的头像为 ./data/avatar/... 相对地址，原先直接传入 Image.network 导致加载失败。模型统一规范化为有效 HTTP(S) 绝对地址；公开 UID 1 中号与小号头像均已只读核验 HTTP 200/image/jpeg。
+- 根因二：站点性别图标与等级都使用 .kmlevs，管理员性别图标恰好位于 Lv.16 前，旧 querySelector 取到了私用字体图标。现在只读取 .kmlv 的 Lv 数字，不再把性别当等级。等级背景沿用有效站点用户组颜色，并计算对比文字色。
+- 名称/头像/等级/用户组优先从已核对“用户ID”的同一页头读取；不把其它 UID 页面数据拼进当前用户。用户名缩为 24sp、头像直径 64dp，封面最小高度由 280dp 收为 224dp；不改真实昵称。
+- 人气、关注、粉丝由混合 Text/TextButton 的 Wrap 改为三个等宽的 Row 单元，统一 13sp 字体、居中对齐及至少 48dp 触控高度。大字号在每列内统一显示计数/标签两行，不互相挤占或裁切。
+- 八个功能固定为两排、每排四列，移除 maxWidth<350 或大字号时降到双列的旧规则；图标 22dp、文字 12sp，标签和计数分开显示，大字号仍可自然增长行高。
+- 底部四个操作固定 Row + Expanded，图标 18dp、文字 12sp，单按钮最小 48dp；不再使用 Wrap，因此不会出现三上一下。
+- 个人主页顶栏基准高度 48dp、标题 18sp、图标 20dp；吸顶分栏基准高度约 52dp，图标 18dp、文字 12sp。保留文字缩放时所需的自然高度，磨砂边界依实际高度一起变化。
+- 新增管理员真实公开夹具，覆盖性别图标排在等级前和相对头像地址；夹具剔除会话字段。21 项主页回归通过，包含 320/360/393dp × 1/1.3/2 倍字号、底部同排、两排四列、统计对齐、正确昵称/头像URL/Lv.16 和既有导航/二维码；定向 Dart 分析无诊断。
+- 上版受影响源码快照在 build/rollback/profile-1.2.0-source.zip，按原相对路径保存。pubspec、关于和 README 同步 1.2.1+38。未安装真机，正式包校验记录见下方。
+
+### 1.2.1 最终发布校验
+
+- ARM64 Release 构建成功（214.9 秒），日志 `build/logs/release-1.2.1-profile-density.log`。AAPT 确认包名 `ycoo.net.php`、versionName `1.2.1`、versionCode `38`；ZIP 原生库仅 `arm64-v8a`，完整 MaterialIcons 字体 1,645,184 字节。
+- APK：`源社区_v1.2.1.apk`，36,086,014 字节；SHA-256 `F03365CB751A392C1EB2C4F1763407B6AFF74E94D8E08E899D98B9F27E47B954`。APK v2 签名证书 SHA-256 `3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975` 匹配指定 BKS；16 KiB zipalign 校验通过。
+- 复制哈希一致后删除根目录旧 APK，只保留当前 1.2.1；release.sha256 已同步。正式包未安装到真机；上述头像来自公开站点只读核对，排版由 Flutter 组件几何检查，不能代替真实设备观感验收。
+
+
+## 1.2.2+39 普通用户主页灰屏与帖子作者对齐（2026-11-03）
+
+- 用当前公开移动信息流选取普通用户，再读取 profile API 和移动个人页复现。UID 16966（pgffgm）、25430、5427 的 API space.medals 均返回空字符串，而管理员及旧样例用户返回列表；原先强制转换 List 在页面构建时抛 TypeError，Release 表现为灰屏。修改前 pgffgm 组件测试已复现异常，修复后同样数据正常呈现。
+- 主页模型只在勋章数据为列表或键控集合时读取条目，空字符串/空值作为无勋章；可选用户组和扩展积分也先校验类型，负数帖子计数不进入非法 clamp 边界。资料身份校验、账号切换保护及关系操作限制保留，不把错误内容伪装为成功。
+- 三位真实普通用户的离线夹具只保留公开展示字段和主页片段，删除会话字段及脚本。新增回归直接构建每位用户的原生主页，确认姓名正确且无 ErrorWidget；覆盖可选字段为空的情况。
+- 修复共享 TopicTile 作者区：头像、作者文字块及关注按钮垂直居中；姓名与等级共用文字基线，时间紧跟姓名行并左对齐，长名最多两行。性别/认证保留；头像和姓名入口仍均可进入用户主页。首页、关注、导读、版块、搜索及个人帖子列表共用同一处修复。
+- profile/topic_author_layout/mobile_portal 定向回归 44/44 通过，涵盖 320/360/393dp × 1/1.3/2 倍字号、长名、头像/文字/按钮几何与文字基线。Dart 定向分析无 error/warning，home.dart 保留 11 项既有风格 info；不为本次修复扩改无关代码。
+- 防回归教训：只测管理员和有勋章用户会漏掉站点“空集合返回空字符串”的实际契约；新增 API 字段应检查非空/空集合两类真实数据。布局断言用 getDryBaseline 读取文字基线，不在测试布局外调用受 debug 限制的 getDistanceToBaseline。
+- pubspec、关于和 README 同步 1.2.2+39。修改前源码按相对路径保留于 build/rollback/profile-1.2.1-source.zip；构建日志放 build/logs。正式包静态校验记录见下方；未安装到真机或执行账号关系写入。
+
+
+### 1.2.2 最终发布校验
+
+- ARM64 Release 构建成功（267.2 秒），日志 build/logs/release-1.2.2-profile-gray.log。AAPT 确认包名 ycoo.net.php、versionName 1.2.2、versionCode 39；APK ZIP 原生库仅 arm64-v8a，MaterialIcons 完整字体 1,645,184 字节。
+- APK：源社区_v1.2.2.apk，36,086,010 字节；SHA-256 7E216114A012BE56123E96C7376A1AD70F22FB65ABBFACF5E913EB186342CAC9。APK v2 签名证书 SHA-256 3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975 匹配指定 BKS；16 KiB zipalign 校验通过。复制后与构建产物哈希一致，release.sha256 已同步，删除旧 1.2.1 APK 后根目录仅留 1.2.2。
+- Windows aapt 无法读取中文绝对路径，报 Illegal byte sequence；改用已有 V: ASCII 映射后包体检查通过。构建和 Android 打包工具均使用映射路径，不把该工具错误当成 APK 内容损坏。
+- 定向测试 44/44 通过；未安装到真机，未用真实账号执行关注、好友或其它写入。普通用户实际设备访问和最终视觉仍需设备验收。
+
+
+### 1.2.2 源码推送前核对
+
+- 合并后台自动签到、完整原生个人主页及后续修复的源码、公开资料夹具与测试；profile/topic_author_layout/mobile_portal/reading_tools/native_site 合并定向回归 64/64 通过。
+- 公开 README 和开发记录移除本地绝对路径及签名文件位置；仅保留相对路径和参考项目名称。APK、签名材料、会话凭据、本地配置、构建缓存、日志及回退 ZIP 不进入提交；release.sha256 保留为本地正式包校验值。
+- 此次只同步源码与文档，没有改变 1.2.2 已核验 APK 的程序内容，也没有安装设备或执行账号写入。使用普通 fast-forward 推送，不改写历史。

@@ -8,12 +8,15 @@ import '../core/design_system/components/review_card.dart';
 import '../core/design_system/components/review_frosted_app_bar.dart';
 import '../core/widgets/app_section_card.dart';
 import '../data/site.dart';
+import '../data/profile.dart';
 import 'common.dart';
 import 'login.dart';
 import 'media.dart';
 import 'editor_tools.dart';
 import 'home.dart' show TopicsPage;
 import 'native_site.dart';
+import 'profile.dart';
+export 'profile.dart' show ProfilePage;
 import '../core/utils/haptic_feedback_util.dart';
 
 class ThreadPage extends StatefulWidget {
@@ -449,9 +452,7 @@ void routeLink(
       push(context, ThreadPage(site, Topic(id: tid, title: '帖子详情')));
       return;
     }
-    final uid =
-        RegExp(r'space-uid-(\d+)').firstMatch(uri.path)?.group(1) ??
-        uri.queryParameters['uid'];
+    final uid = nativeUserProfileId(uri);
     if (uid != null) {
       push(context, ProfilePage(site, uid));
       return;
@@ -869,114 +870,6 @@ class _HtmlContentState extends State<HtmlContent> {
       children: blocks,
     );
   }
-}
-
-class ProfilePage extends StatefulWidget {
-  const ProfilePage(this.site, this.uid, {super.key});
-  final Site site;
-  final String uid;
-  @override
-  State<ProfilePage> createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends State<ProfilePage> {
-  late Future<Map<String, dynamic>> future;
-  @override
-  void initState() {
-    super.initState();
-    future = widget.site.api('profile', query: {'uid': widget.uid});
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: ReviewFrostedAppBar(
-      title: const Text('用户主页'),
-      actions: [
-        IconButton(
-          tooltip: '原站主页',
-          icon: const Icon(Icons.open_in_browser),
-          onPressed: () =>
-              openWeb(context, '/space-uid-${widget.uid}.html', title: '用户空间'),
-        ),
-      ],
-    ),
-    body: FutureBuilder(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Failure(
-            snapshot.error!,
-            () => setState(
-              () => future = widget.site.api(
-                'profile',
-                query: {'uid': widget.uid},
-              ),
-            ),
-          );
-        }
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final space = snapshot.data!['space'] as Map? ?? {};
-        return ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            Center(
-              child: SiteAvatar(
-                uid: widget.uid,
-                name: textOf(space, 'username'),
-                radius: 36,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                textOf(space, 'username'),
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-            ),
-            Center(child: Text('UID ${widget.uid}')),
-            const SizedBox(height: 24),
-            AppSectionCard(
-              child: Column(
-                children: [
-                  ListTile(
-                    title: const Text('主题'),
-                    trailing: Text('${space['threads'] ?? '—'}'),
-                  ),
-                  ListTile(
-                    title: const Text('帖子'),
-                    trailing: Text('${space['posts'] ?? '—'}'),
-                  ),
-                  ListTile(
-                    title: const Text('积分'),
-                    trailing: Text('${space['credits'] ?? '—'}'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.tonal(
-              onPressed: () => openWeb(
-                context,
-                '/home.php?mod=space&uid=${widget.uid}&do=thread&view=me',
-                title: '用户帖子',
-              ),
-              child: const Text('查看 TA 的帖子'),
-            ),
-            OutlinedButton(
-              onPressed: () => openWeb(
-                context,
-                '/home.php?mod=spacecp&ac=pm&op=showmsg&handlekey=showmsg_${widget.uid}&touid=${widget.uid}&pmid=0&daterange=2',
-                title: '发送私信',
-              ),
-              child: const Text('私信'),
-            ),
-          ],
-        );
-      },
-    ),
-  );
 }
 
 class ComposePage extends StatefulWidget {

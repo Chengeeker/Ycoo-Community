@@ -263,28 +263,6 @@ class NativePageData {
   }
 }
 
-class SignData {
-  SignData(this.stats, this.label, this.formhash);
-  final List<String> stats;
-  final String label, formhash;
-  bool get signed => label.contains('已签到') || label.contains('已签');
-  factory SignData.parse(String source) {
-    final doc = html.parse(source);
-    return SignData(
-      doc
-          .querySelectorAll('.comiis_qdinfo li')
-          .map((e) => e.text.trim())
-          .toList(),
-      doc.querySelector('#signresult')?.text.trim() ?? '签到',
-      RegExp(r'operation=qiandao[^"\s]*formhash=([a-zA-Z0-9]{8})')
-              .firstMatch(source)
-              ?.group(1) ??
-          Site.parseWebSession(source)?['formhash'] as String? ??
-          '',
-    );
-  }
-}
-
 class SignRank {
   SignRank(this.uid, this.name, this.detail, this.avatar);
   final String uid, name, detail, avatar;
@@ -301,25 +279,4 @@ class SignRank {
       )
       .where((entry) => entry.name.isNotEmpty)
       .toList();
-}
-
-extension NativeSiteActions on Site {
-  Future<String> signNow(String hash) async {
-    if (!loggedIn) throw SiteException('请先登录');
-    if (!RegExp(r'^[a-zA-Z0-9]{8}$').hasMatch(hash)) {
-      throw SiteException('未能确认签到凭据，请刷新后重试');
-    }
-    final response = await request(
-      '/plugin.php',
-      query: {
-        'id': 'k_misign:sign',
-        'operation': 'qiandao',
-        'format': 'text',
-        'formhash': hash,
-        '_session': DateTime.now().microsecondsSinceEpoch,
-        'mobile': 2,
-      },
-    );
-    return plain(unwrapPortalHtml('${response.data}')).trim();
-  }
 }

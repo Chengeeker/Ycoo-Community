@@ -191,12 +191,7 @@ class _HomePageState extends State<HomePage>
         .then((_) async {
           sessionResolved = true;
           if (mounted) setState(() {});
-          try {
-            final result = await widget.site.maybeAutoSignIn();
-            if (mounted && result != null) feedback(context, result);
-          } catch (_) {
-            if (mounted) feedback(context, '自动签到未完成，请打开每日签到查看');
-          }
+          await widget.site.maybeAutoSignIn();
         })
         .catchError((_) {});
   }
@@ -927,12 +922,14 @@ class TopicTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 InkWell(
                   onTap: topic.uid.isEmpty
                       ? null
                       : () => push(context, ProfilePage(site, topic.uid)),
                   child: SizedBox(
+                    key: ValueKey('topic-avatar-${topic.id}'),
                     width: 48,
                     height: 48,
                     child: Center(
@@ -947,69 +944,99 @@ class TopicTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 2,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+                  child: InkWell(
+                    onTap: topic.uid.isEmpty || topic.uid == '0'
+                        ? null
+                        : () => push(context, ProfilePage(site, topic.uid)),
+                    child: ConstrainedBox(
+                      key: ValueKey('topic-author-block-${topic.id}'),
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            topic.author.isEmpty ? '作者信息暂不可用' : topic.author,
-                            style: theme.textTheme.labelLarge,
-                          ),
-                          if (topic.level.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: levelColor,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                topic.level,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: levelText,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  topic.author.isEmpty
+                                      ? '作者信息暂不可用'
+                                      : topic.author,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    height: 1.2,
+                                  ),
                                 ),
                               ),
-                            ),
-                          if (topic.gender == 'male' ||
-                              topic.gender == 'female')
-                            Semantics(
-                              label: topic.gender == 'male' ? '男' : '女',
-                              child: Icon(
-                                topic.gender == 'male'
-                                    ? Icons.male
-                                    : Icons.female,
-                                size: 17,
-                                color: genderColor,
+                              if (topic.level.isNotEmpty) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: levelColor,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    topic.level,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: levelText,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (topic.gender == 'male' ||
+                                  topic.gender == 'female') ...[
+                                const SizedBox(width: 4),
+                                Semantics(
+                                  label: topic.gender == 'male' ? '男' : '女',
+                                  child: Icon(
+                                    topic.gender == 'male'
+                                        ? Icons.male
+                                        : Icons.female,
+                                    size: 17,
+                                    color: genderColor,
+                                  ),
+                                ),
+                              ],
+                              if (topic.verificationIcon.isNotEmpty) ...[
+                                const SizedBox(width: 4),
+                                Image.network(
+                                  topic.verificationIcon,
+                                  width: 18,
+                                  height: 18,
+                                  headers: siteImageHeaders(
+                                    topic.verificationIcon,
+                                  ),
+                                  semanticLabel: topic.verificationLabel.isEmpty
+                                      ? '认证'
+                                      : topic.verificationLabel,
+                                  errorBuilder: (_, _, _) =>
+                                      const Icon(Icons.verified, size: 18),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (topic.time.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              topic.time,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                height: 1.2,
                               ),
                             ),
-                          if (topic.verificationIcon.isNotEmpty)
-                            Image.network(
-                              topic.verificationIcon,
-                              width: 18,
-                              height: 18,
-                              headers: siteImageHeaders(topic.verificationIcon),
-                              semanticLabel: topic.verificationLabel.isEmpty
-                                  ? '认证'
-                                  : topic.verificationLabel,
-                              errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.verified, size: 18),
-                            ),
+                          ],
                         ],
                       ),
-                      if (topic.time.isNotEmpty)
-                        Text(
-                          topic.time,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
                 ),
                 if (topic.uid.isNotEmpty && topic.uid != site.uid)
@@ -2196,6 +2223,16 @@ class SettingsPage extends StatelessWidget {
         AppSectionCard(
           child: Column(
             children: [
+              ListenableBuilder(
+                listenable: settings,
+                builder: (context, _) => ReviewSwitchTile(
+                  title: '自动签到',
+                  summary: '登录后启动应用时在后台检查并签到，不打断当前页面',
+                  leading: const Icon(Icons.event_available_outlined),
+                  value: settings.prefs.getBool('autoSignIn') ?? false,
+                  onChanged: (value) => settings.set('autoSignIn', value),
+                ),
+              ),
               ReviewPreferenceTile(
                 title: '阅读历史',
                 leading: const Icon(Icons.history_rounded),
@@ -2209,7 +2246,7 @@ class SettingsPage extends StatelessWidget {
               ),
               ReviewPreferenceTile(
                 title: '阅读与社区功能',
-                subtitle: '自动签到、回复分页、URL 链接与 FPS',
+                subtitle: '回复分页、URL 链接与 FPS',
                 leading: const Icon(Icons.auto_stories_outlined),
                 onTap: () => push(context, ReadingSettingsPage(site, settings)),
               ),
@@ -2252,12 +2289,12 @@ class SettingsPage extends StatelessWidget {
             children: [
               ReviewPreferenceTile(
                 title: '关于源社区',
-                subtitle: '1.0.0 · 界面复用自 Review',
+                subtitle: '1.2.2 · 界面复用自 Review',
                 leading: const Icon(Icons.info_outline),
                 onTap: () => showAboutDialog(
                   context: context,
                   applicationName: '源社区',
-                  applicationVersion: '1.0.0',
+                  applicationVersion: '1.2.2',
                   children: [
                     const Text(
                       '基于源论坛的第三方客户端。M3 主题与通用组件复用自 Review（MIT）。社区内容与账户权限由原站提供。',

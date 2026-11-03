@@ -1,0 +1,67 @@
+{
+  "space": {
+    "uid": "5427",
+    "username": "364618246",
+    "group": {
+      "type": "special",
+      "grouptitle": "<font color=\"#333333\">繁星达人</font>",
+      "stars": "7",
+      "color": "#333333",
+      "icon": "<img src=\"data/attachment/common/18/common_33_usergroup_icon.gif\" alt=\"\" class=\"vm\" />",
+      "readaccess": "70",
+      "allowgetattach": "1",
+      "allowgetimage": "1",
+      "allowmediacode": "1",
+      "maxsigsize": "80",
+      "allowbegincode": "1",
+      "userstatusby": "1"
+    },
+    "medals": "",
+    "credits": "3337",
+    "threads": "99",
+    "posts": "543",
+    "friends": "0",
+    "follower": "3",
+    "following": "0",
+    "blogs": "0",
+    "albums": "1",
+    "doings": "0",
+    "views": "922",
+    "oltime": "155",
+    "regdate": "2024-10-25 10:30",
+    "lastvisit": "2026-11-3 18:45",
+    "sightml": "",
+    "extcredits2": "3253",
+    "extcredits3": "392",
+    "extcredits4": "495"
+  },
+  "extcredits": {
+    "2": {
+      "img": "",
+      "title": "经验",
+      "unit": "",
+      "ratio": "100",
+      "showinthread": null,
+      "allowexchangein": "1",
+      "allowexchangeout": null
+    },
+    "3": {
+      "img": "",
+      "title": "贡献",
+      "unit": "",
+      "ratio": "1000",
+      "showinthread": null,
+      "allowexchangein": null,
+      "allowexchangeout": null
+    },
+    "4": {
+      "img": "",
+      "title": "星币",
+      "unit": "",
+      "ratio": "0",
+      "showinthread": null,
+      "allowexchangein": null,
+      "allowexchangeout": null
+    }
+  }
+}

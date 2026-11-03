@@ -1,0 +1,110 @@
+{
+  "space": {
+    "uid": "34747",
+    "username": "2488916893",
+    "group": {
+      "type": "special",
+      "grouptitle": "<font color=\"#4B3E2A\">大会员</font>",
+      "stars": "7",
+      "color": "#4B3E2A",
+      "icon": "",
+      "readaccess": "70",
+      "allowgetattach": "1",
+      "allowgetimage": "1",
+      "allowmediacode": "1",
+      "maxsigsize": "80",
+      "allowbegincode": "1",
+      "userstatusby": "1"
+    },
+    "medals": [
+      {
+        "name": "卯兔 ",
+        "image": "static/image/common/卯兔 .gif",
+        "description": "",
+        "medalid": "112"
+      },
+      {
+        "name": "活跃之星",
+        "image": "static/image/common/100H.gif",
+        "description": "在线时间100小时",
+        "medalid": "45"
+      },
+      {
+        "name": "常住居民",
+        "image": "static/image/common/qddk.gif",
+        "description": "注册源社区31天以上，可自主申请",
+        "medalid": "48"
+      },
+      {
+        "name": "帅哥",
+        "image": "static/image/common/yltsg.gif",
+        "description": "问？你身份证性别是男的，你就领取帅哥勋章",
+        "medalid": "73"
+      },
+      {
+        "name": "龙的传人",
+        "image": "static/image/common/yltldcr.gif",
+        "description": "龙的传人勋章！免费领取，可自主领取",
+        "medalid": "87"
+      },
+      {
+        "name": "倾国倾城",
+        "image": "static/image/common/倾国倾城.gif",
+        "description": "",
+        "medalid": "134"
+      },
+      {
+        "name": "优秀",
+        "image": "static/image/common/优秀.gif",
+        "description": "",
+        "medalid": "133"
+      }
+    ],
+    "credits": "8265",
+    "threads": "530",
+    "posts": "855",
+    "friends": "0",
+    "follower": "177",
+    "following": "0",
+    "blogs": "0",
+    "albums": "0",
+    "doings": "0",
+    "views": "40149",
+    "oltime": "454",
+    "regdate": "2025-11-27 11:36",
+    "lastvisit": "2026-11-3 17:41",
+    "sightml": "",
+    "extcredits2": "9729",
+    "extcredits3": "947",
+    "extcredits4": "515"
+  },
+  "extcredits": {
+    "2": {
+      "img": "",
+      "title": "经验",
+      "unit": "",
+      "ratio": "100",
+      "showinthread": null,
+      "allowexchangein": "1",
+      "allowexchangeout": null
+    },
+    "3": {
+      "img": "",
+      "title": "贡献",
+      "unit": "",
+      "ratio": "1000",
+      "showinthread": null,
+      "allowexchangein": null,
+      "allowexchangeout": null
+    },
+    "4": {
+      "img": "",
+      "title": "星币",
+      "unit": "",
+      "ratio": "0",
+      "showinthread": null,
+      "allowexchangein": null,
+      "allowexchangeout": null
+    }
+  }
+}

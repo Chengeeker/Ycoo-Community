@@ -4,8 +4,6 @@ import '../core/design_system/components/review_frosted_app_bar.dart';
 import '../core/design_system/components/review_switch_tile.dart';
 import '../data/site.dart';
 import '../settings.dart';
-import 'common.dart';
-import 'login.dart';
 
 class ReadingSettingsPage extends StatelessWidget {
   const ReadingSettingsPage(this.site, this.settings, {super.key});
@@ -19,16 +17,6 @@ class ReadingSettingsPage extends StatelessWidget {
       builder: (context, _) => ListView(
         padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
-          ReviewSwitchTile(
-            title: '自动签到',
-            summary: '登录后每次打开应用时尝试签到，每天成功后不再重复',
-            value: settings.prefs.getBool('autoSignIn') ?? false,
-            onChanged: (value) async {
-              if (value && !site.loggedIn) await push(context, LoginPage(site));
-              if (value && !site.loggedIn) return;
-              await settings.set('autoSignIn', value);
-            },
-          ),
           ReviewSwitchTile(
             title: '自动加载回复',
             summary: '接近帖子末尾时加载下一页回复',

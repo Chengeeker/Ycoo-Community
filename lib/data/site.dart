@@ -224,6 +224,28 @@ List<Topic> mergeForumSummaries(List<Topic> mobile, List<Topic> api) {
   }).toList();
 }
 
+class SignData {
+  SignData(this.stats, this.label, this.formhash);
+  final List<String> stats;
+  final String label, formhash;
+  bool get signed => label.contains('已签到') || label.contains('已签');
+  factory SignData.parse(String source) {
+    final doc = html.parse(source);
+    return SignData(
+      doc
+          .querySelectorAll('.comiis_qdinfo li')
+          .map((e) => e.text.trim())
+          .toList(),
+      doc.querySelector('#signresult')?.text.trim() ?? '',
+      RegExp(r'operation=qiandao[^"\s]*formhash=([a-zA-Z0-9]{8})')
+              .firstMatch(source)
+              ?.group(1) ??
+          Site.parseWebSession(source)?['formhash'] as String? ??
+          '',
+    );
+  }
+}
+
 class Site extends ChangeNotifier {
   Site(this.prefs);
   final SharedPreferences prefs;
@@ -927,15 +949,10 @@ class Site extends ChangeNotifier {
     };
   }
 
-  Future<String?> maybeAutoSignIn() async {
-    if (!loggedIn || prefs.getBool('autoSignIn') != true) return null;
-    final now = DateTime.now();
-    final today = '${now.year}-${now.month}-${now.day}';
-    final key = 'signIn.$uid.date';
-    if (prefs.getString(key) == today) return null;
-    if (formhash.isEmpty) await syncSession();
-    if (!loggedIn || !RegExp(r'^[a-zA-Z0-9]{8}$').hasMatch(formhash)) {
-      return '未能确认签到凭据，请打开每日签到';
+  Future<String> signNow(String hash) async {
+    if (!loggedIn) throw SiteException('请先登录');
+    if (!RegExp(r'^[a-zA-Z0-9]{8}$').hasMatch(hash)) {
+      throw SiteException('未能确认签到凭据，请刷新后重试');
     }
     final response = await request(
       '/plugin.php',
@@ -943,18 +960,40 @@ class Site extends ChangeNotifier {
         'id': 'k_misign:sign',
         'operation': 'qiandao',
         'format': 'text',
-        'formhash': formhash,
+        'formhash': hash,
+        '_session': DateTime.now().microsecondsSinceEpoch,
+        'mobile': 2,
       },
     );
-    final message = plain(unwrapPortalHtml('${response.data}')).trim();
-    if (message.contains('签到成功') ||
-        message.contains('已经签到') ||
-        message.contains('已签到') ||
-        message.contains('今日已签')) {
-      await prefs.setString(key, today);
-      return message;
+    return plain(unwrapPortalHtml('${response.data}')).trim();
+  }
+
+  Future<String?>? _autoSignInTask;
+
+  Future<String?> maybeAutoSignIn() {
+    if (!loggedIn || prefs.getBool('autoSignIn') != true) {
+      return Future.value();
     }
-    return message.isEmpty ? '签到结果未确认，请打开每日签到查看' : message;
+    return _autoSignInTask ??= _checkAutoSignIn().whenComplete(() {
+      _autoSignInTask = null;
+    });
+  }
+
+  Future<String?> _checkAutoSignIn() async {
+    final account = uid;
+    final epoch = sessionEpoch;
+    final response = await request(
+      '/k_misign-sign.html',
+      query: {'mobile': 2, '_session': DateTime.now().microsecondsSinceEpoch},
+    );
+    if (uid != account ||
+        sessionEpoch != epoch ||
+        !loggedIn ||
+        prefs.getBool('autoSignIn') != true)
+      return null;
+    final status = SignData.parse(unwrapPortalHtml('${response.data}'));
+    if (status.signed || status.label.isEmpty) return null;
+    return signNow(status.formhash);
   }
 
   Future<void> login(
