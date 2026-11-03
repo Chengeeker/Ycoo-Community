@@ -2289,12 +2289,12 @@ class SettingsPage extends StatelessWidget {
             children: [
               ReviewPreferenceTile(
                 title: '关于源社区',
-                subtitle: '1.2.2 · 界面复用自 Review',
+                subtitle: '1.2.4 · 界面复用自 Review',
                 leading: const Icon(Icons.info_outline),
                 onTap: () => showAboutDialog(
                   context: context,
                   applicationName: '源社区',
-                  applicationVersion: '1.2.2',
+                  applicationVersion: '1.2.4',
                   children: [
                     const Text(
                       '基于源论坛的第三方客户端。M3 主题与通用组件复用自 Review（MIT）。社区内容与账户权限由原站提供。',

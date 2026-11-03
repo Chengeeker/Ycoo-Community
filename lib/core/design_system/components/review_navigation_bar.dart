@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart' show kTouchSlop;
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -21,7 +23,7 @@ double reviewFloatingNavigationClearance(
 }
 
 /// Material 3 navigation shared by the app shell.
-class ReviewNavigationBar extends StatelessWidget {
+class ReviewNavigationBar extends StatefulWidget {
   const ReviewNavigationBar({
     super.key,
     required this.selectedIndex,
@@ -39,9 +41,107 @@ class ReviewNavigationBar extends StatelessWidget {
   final bool useFloating;
   final bool useLiquidGlass;
 
+  @override
+  State<ReviewNavigationBar> createState() => _ReviewNavigationBarState();
+}
+
+class _ReviewNavigationBarState extends State<ReviewNavigationBar> {
+  Timer? _holdTimer, _resetTimer;
+  int? _pointer;
+  Offset? _origin;
+  int? _pendingIndex;
+  int _gestureId = 0;
+  bool _moved = false, _horizontal = false, _lensActive = false;
+
+  void _pointerDown(PointerDownEvent event) {
+    if (_pointer != null) return;
+    _holdTimer?.cancel();
+    _resetTimer?.cancel();
+    if (_lensActive) setState(() => _lensActive = false);
+    _pointer = event.pointer;
+    _origin = event.position;
+    _pendingIndex = null;
+    _moved = _horizontal = false;
+    _gestureId++;
+    _holdTimer = Timer(const Duration(milliseconds: 220), () {
+      if (!mounted || _pointer != event.pointer || _moved) return;
+      setState(() => _lensActive = true);
+      HapticFeedbackUtil.light();
+    });
+  }
+
+  void _pointerMove(PointerMoveEvent event) {
+    if (_pointer != event.pointer || _origin == null) return;
+    final delta = event.position - _origin!;
+    if (delta.distance <= kTouchSlop) return;
+    _moved = true;
+    _holdTimer?.cancel();
+    if (delta.dx.abs() > delta.dy.abs()) {
+      _horizontal = true;
+      if (!_lensActive) setState(() => _lensActive = true);
+    }
+  }
+
+  void _pointerEnd(PointerEvent event, {bool cancelled = false}) {
+    if (_pointer != event.pointer) return;
+    _holdTimer?.cancel();
+    final gesture = _gestureId;
+    // Let the glass bar finish its own release callback before choosing a page.
+    scheduleMicrotask(() {
+      if (!mounted || gesture != _gestureId) return;
+      final target = _pendingIndex;
+      final rejected = cancelled || (_moved && !_horizontal);
+      final wasLens = _lensActive;
+      _pointer = null;
+      _origin = null;
+      _pendingIndex = null;
+      if (wasLens) {
+        _resetTimer = Timer(const Duration(milliseconds: 250), () {
+          if (mounted && gesture == _gestureId) {
+            setState(() => _lensActive = false);
+          }
+        });
+      }
+      if (!rejected &&
+          target != null &&
+          (!wasLens || target != widget.selectedIndex)) {
+        _select(target);
+      }
+    });
+  }
+
+  void _glassSelected(int index) {
+    if (_pointer != null) {
+      _pendingIndex = index;
+    } else {
+      _select(index);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ReviewNavigationBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.useLiquidGlass || !widget.useFloating) {
+      _holdTimer?.cancel();
+      _resetTimer?.cancel();
+      _gestureId++;
+      _pointer = null;
+      _origin = null;
+      _pendingIndex = null;
+      _lensActive = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _holdTimer?.cancel();
+    _resetTimer?.cancel();
+    super.dispose();
+  }
+
   void _select(int index) {
     HapticFeedbackUtil.selection();
-    onSelected(index);
+    widget.onSelected(index);
   }
 
   static const _destinations = <_NavigationDestination>[
@@ -76,9 +176,9 @@ class ReviewNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (!useFloating) {
+    if (!widget.useFloating) {
       return NavigationBar(
-        selectedIndex: selectedIndex,
+        selectedIndex: widget.selectedIndex,
         elevation: 0,
         height: 68,
         onDestinationSelected: _select,
@@ -93,86 +193,93 @@ class ReviewNavigationBar extends StatelessWidget {
       );
     }
 
-    if (useLiquidGlass) {
+    if (widget.useLiquidGlass) {
       final isLightMode = Theme.of(context).brightness == Brightness.light;
       return SafeArea(
         bottom: false,
         child: Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
-            padding: EdgeInsets.only(bottom: hasBottomInset ? 6 : 14),
+            padding: EdgeInsets.only(bottom: widget.hasBottomInset ? 6 : 14),
             child: RepaintBoundary(
               child: SizedBox(
                 width: _floatingBarWidth(context),
                 height: 56,
                 child: Stack(
                   children: [
-                    GlassTabBar.bottom(
-                      tabs: [
-                        for (final destination in _destinations)
-                          GlassTab(
-                            icon: Icon(destination.icon),
-                            activeIcon: Icon(destination.selectedIcon),
-                            label: destination.label,
-                          ),
-                      ],
-                      selectedIndex: selectedIndex,
-                      onTabSelected: _select,
-                      barHeight: 56,
-                      horizontalPadding: 0,
-                      verticalPadding: 0,
-                      barBorderRadius: 9999,
-                      indicatorBorderRadius: 9999,
-                      settings: LiquidGlassSettings(
-                        glassColor: isLightMode
-                            ? const Color(0xF0FFFFFF)
-                            : const Color(0x66000000),
-                        bodyMode: GlassBodyMode.clear,
-                        thickness: 10,
-                        blur: 2,
-                        lightIntensity: 0.25,
-                        ambientStrength: 0,
-                        refractiveIndex: 1.19,
-                        chromaticAberration: 0.008,
-                        rimLight: isLightMode ? 1 : 0,
-                        shadowElevation: isLightMode ? 0.55 : 0,
+                    Listener(
+                      behavior: HitTestBehavior.translucent,
+                      onPointerDown: _pointerDown,
+                      onPointerMove: _pointerMove,
+                      onPointerUp: _pointerEnd,
+                      onPointerCancel: (event) =>
+                          _pointerEnd(event, cancelled: true),
+                      child: GlassTabBar.bottom(
+                        tabs: [
+                          for (final destination in _destinations)
+                            GlassTab(
+                              icon: Icon(destination.icon),
+                              activeIcon: Icon(destination.selectedIcon),
+                              label: destination.label,
+                            ),
+                        ],
+                        selectedIndex: widget.selectedIndex,
+                        onTabSelected: _glassSelected,
+                        barHeight: 56,
+                        horizontalPadding: 0,
+                        verticalPadding: 0,
+                        barBorderRadius: 9999,
+                        indicatorBorderRadius: 9999,
+                        settings: LiquidGlassSettings(
+                          glassColor: isLightMode
+                              ? const Color(0xF0FFFFFF)
+                              : const Color(0x66000000),
+                          bodyMode: GlassBodyMode.clear,
+                          thickness: 10,
+                          blur: 2,
+                          lightIntensity: 0.25,
+                          ambientStrength: 0,
+                          refractiveIndex: 1.19,
+                          chromaticAberration: 0.008,
+                          rimLight: isLightMode ? 1 : 0,
+                          shadowElevation: isLightMode ? 0.55 : 0,
+                        ),
+                        indicatorSettings: LiquidGlassSettings(
+                          glassColor: isLightMode
+                              ? const Color(0x18000000)
+                              : const Color(0x26FFFFFF),
+                          bodyMode: GlassBodyMode.clear,
+                          refractiveIndex: 1.18,
+                          chromaticAberration: 0.025,
+                          rimShade: isLightMode ? 0.12 : 0,
+                          rimLight: isLightMode ? 0.35 : 0,
+                        ),
+                        indicatorPinchStrength: _lensActive ? 0.7 : 0,
+                        indicatorExpansion: _lensActive
+                            ? const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              )
+                            : EdgeInsets.zero,
+                        quality: GlassQuality.premium,
+                        backgroundQuality: GlassQuality.premium,
+                        maskingQuality: MaskingQuality.high,
+                        enableBlend: true,
+                        indicatorColor: isLightMode
+                            ? const Color(0x26000000)
+                            : const Color(0x26FFFFFF),
+                        interactionGlowColor: const Color(0x20FFFFFF),
+                        innerBlur: 6,
+                        pressScale: 1.06,
+                        selectedIconColor: colorScheme.primary,
+                        selectedLabelColor: colorScheme.primary,
+                        unselectedIconColor: isLightMode
+                            ? colorScheme.onSurfaceVariant
+                            : Colors.white,
+                        unselectedLabelColor: isLightMode
+                            ? colorScheme.onSurfaceVariant
+                            : Colors.white,
                       ),
-                      indicatorSettings: LiquidGlassSettings(
-                        glassColor: isLightMode
-                            ? const Color(0x18000000)
-                            : const Color(0x00FFFFFF),
-                        bodyMode: isLightMode
-                            ? GlassBodyMode.clear
-                            : GlassBodyMode.adaptive,
-                        refractiveIndex: 1.18,
-                        chromaticAberration: 0.025,
-                        rimShade: isLightMode ? 0.12 : 0,
-                        rimLight: isLightMode ? 0.35 : 0,
-                      ),
-                      indicatorPinchStrength: 0,
-                      indicatorExpansion: EdgeInsets.zero,
-                      quality: GlassQuality.premium,
-                      backgroundQuality: GlassQuality.premium,
-                      maskingQuality: MaskingQuality.high,
-                      enableBlend: true,
-                      indicatorColor: isLightMode
-                          ? const Color(0x26000000)
-                          : const Color(0x66000000),
-                      interactionGlowColor: const Color(0x20FFFFFF),
-                      innerBlur: 6,
-                      pressScale: 1.06,
-                      selectedIconColor: isLightMode
-                          ? colorScheme.primary
-                          : Colors.white,
-                      selectedLabelColor: isLightMode
-                          ? colorScheme.primary
-                          : Colors.white,
-                      unselectedIconColor: isLightMode
-                          ? colorScheme.onSurfaceVariant
-                          : Colors.white,
-                      unselectedLabelColor: isLightMode
-                          ? colorScheme.onSurfaceVariant
-                          : Colors.white,
                     ),
                     if (isLightMode)
                       Positioned.fill(
@@ -202,7 +309,7 @@ class ReviewNavigationBar extends StatelessWidget {
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
-          padding: EdgeInsets.only(bottom: hasBottomInset ? 6 : 14),
+          padding: EdgeInsets.only(bottom: widget.hasBottomInset ? 6 : 14),
           child: Container(
             width: _floatingBarWidth(context),
             height: 56,
@@ -237,7 +344,7 @@ class ReviewNavigationBar extends StatelessWidget {
                         child: AnimatedSlide(
                           duration: const Duration(milliseconds: 240),
                           curve: Curves.easeOutCubic,
-                          offset: Offset(selectedIndex.toDouble(), 0),
+                          offset: Offset(widget.selectedIndex.toDouble(), 0),
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               color: colorScheme.secondaryContainer,
@@ -274,7 +381,7 @@ class ReviewNavigationBar extends StatelessWidget {
     int index,
     ColorScheme colorScheme,
   ) {
-    final selected = selectedIndex == index;
+    final selected = widget.selectedIndex == index;
     final destination = _destinations[index];
     final activeContent = colorScheme.onSecondaryContainer;
     final inactiveContent = colorScheme.onSurfaceVariant;
