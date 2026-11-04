@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
+import '../theme/app_theme.dart';
+
 class ReviewGalleryGlassIconButton extends StatefulWidget {
   const ReviewGalleryGlassIconButton({
     super.key,
@@ -193,7 +195,7 @@ class ReviewGalleryGlassIconButtonState
               foregroundColor: Colors.white,
               backgroundColor: Colors.transparent,
               shape: const CircleBorder(),
-            ),
+            ).copyWith(overlayColor: AppTheme.pressOverlay),
             onPressed: widget.onPressed,
             icon: Opacity(
               key: widget.opacityKey,

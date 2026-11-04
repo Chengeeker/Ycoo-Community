@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yuan_community/data/site.dart';
 import 'package:yuan_community/main.dart';
 import 'package:yuan_community/settings.dart';
+import 'package:yuan_community/core/design_system/components/review_navigation_bar.dart';
 import 'package:yuan_community/pages/thread.dart';
 
 class PreviewSite extends Site {
@@ -148,6 +149,13 @@ void main() {
       await tester.pumpAndSettle();
       final restored = PreviewSite(prefs);
       await tester.pumpWidget(YuanApp(settings: settings, site: restored));
+      await tester.pumpAndSettle();
+      expect(restored.topicRequests, 0);
+      final restoredNavigation = tester.widget<ReviewNavigationBar>(
+        find.byType(ReviewNavigationBar),
+      );
+      expect(restoredNavigation.selectedIndex, 3);
+      restoredNavigation.onSelected(0);
       await tester.pumpAndSettle();
       expect(restored.topicRequests, 0);
       expect(find.text('分享与阅读，发现更多好内容'), findsOneWidget);

@@ -173,7 +173,7 @@ void main() {
           tester.getCenter(image).dx,
           closeTo(tester.getCenter(dialog).dx, 0.1),
         );
-        expect(find.text('v1.2.12'), findsOneWidget);
+        expect(find.text('v1.2.15'), findsOneWidget);
         expect(find.textContaining('复用自'), findsNothing);
         expect(find.textContaining('Review'), findsNothing);
         expect(

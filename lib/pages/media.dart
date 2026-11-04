@@ -143,6 +143,11 @@ class GalleryPage extends StatefulWidget {
   State<GalleryPage> createState() => _GalleryPageState();
 }
 
+final _galleryNavigators = <NavigatorState, PageRouteBuilder<void>?>{};
+
+bool isForumGalleryTransitioning(BuildContext context) =>
+    _galleryNavigators.containsKey(Navigator.of(context));
+
 Future<void> openGallery(
   BuildContext context,
   List<String> images,
@@ -151,28 +156,47 @@ Future<void> openGallery(
   Object? heroScope,
   List<String> previews = const [],
 }) async {
-  if (images.isEmpty || initial < 0 || initial >= images.length) return;
-  if (cookie.isEmpty) {
-    final source = images
-        .map(Uri.tryParse)
-        .whereType<Uri>()
-        .where(isSite)
-        .firstOrNull;
-    if (source != null) {
-      try {
-        cookie =
-            await Site.cookies.invokeMethod<String>('getCookies', {
-              'url': source.toString(),
-            }) ??
-            '';
-      } on MissingPluginException {
-        /* Widget previews have no cookie store. */
+  if (!context.mounted ||
+      images.isEmpty ||
+      initial < 0 ||
+      initial >= images.length) {
+    return;
+  }
+  final navigator = Navigator.of(context);
+  final sourceRoute = ModalRoute.of(context);
+  if (sourceRoute != null && !sourceRoute.isCurrent) return;
+  final active = _galleryNavigators[navigator];
+  if (_galleryNavigators.containsKey(navigator) &&
+      (active == null || active.isCurrent)) {
+    return;
+  }
+  _galleryNavigators[navigator] = null;
+  PageRouteBuilder<void>? route;
+  try {
+    if (cookie.isEmpty) {
+      final source = images
+          .map(Uri.tryParse)
+          .whereType<Uri>()
+          .where(isSite)
+          .firstOrNull;
+      if (source != null) {
+        try {
+          cookie =
+              await Site.cookies.invokeMethod<String>('getCookies', {
+                'url': source.toString(),
+              }) ??
+              '';
+        } on MissingPluginException {
+          /* Widget previews have no cookie store. */
+        }
       }
     }
-  }
-  if (!context.mounted) return;
-  await Navigator.of(context).push(
-    PageRouteBuilder<void>(
+    if (!context.mounted ||
+        !navigator.mounted ||
+        (sourceRoute != null && !sourceRoute.isCurrent)) {
+      return;
+    }
+    route = PageRouteBuilder<void>(
       opaque: false,
       transitionDuration: const Duration(milliseconds: 330),
       reverseTransitionDuration: const Duration(milliseconds: 200),
@@ -185,8 +209,16 @@ Future<void> openGallery(
       ),
       transitionsBuilder: (_, animation, secondary, child) =>
           FadeTransition(opacity: animation, child: child),
-    ),
-  );
+    );
+    _galleryNavigators[navigator] = route;
+    unawaited(navigator.push(route));
+    // push completes when pop starts; Hero and the outgoing overlay still exist.
+    await route.completed;
+  } finally {
+    if (identical(_galleryNavigators[navigator], route)) {
+      _galleryNavigators.remove(navigator);
+    }
+  }
 }
 
 Widget forumGalleryFlight(
@@ -323,7 +355,8 @@ class _GalleryReturnImageMorph extends StatefulWidget {
 class _GalleryReturnImageMorphState extends State<_GalleryReturnImageMorph> {
   @override
   void dispose() {
-    widget.image.dispose();
+    final image = widget.image;
+    WidgetsBinding.instance.addPostFrameCallback((_) => image.dispose());
     super.dispose();
   }
 
@@ -396,7 +429,7 @@ class _GalleryPageState extends State<GalleryPage>
     duration: const Duration(milliseconds: 260),
   );
   late int current = widget.initial;
-  bool chrome = true, saving = false, sliding = false;
+  bool chrome = true, saving = false, sliding = false, closing = false;
   Animation<double>? routeAnimation;
   bool routeAnimationComplete = true;
   bool routeReturning = false;
@@ -409,6 +442,28 @@ class _GalleryPageState extends State<GalleryPage>
   Offset? tapDown, pendingTap;
   bool tapMoved = false;
   Timer? tapTimer;
+
+  bool get canHandleTap =>
+      mounted &&
+      !closing &&
+      !routeReturning &&
+      (ModalRoute.of(context)?.isCurrent ?? false);
+
+  void cancelPendingTap() {
+    tapTimer?.cancel();
+    tapTimer = null;
+    pendingTap = null;
+    pointers.clear();
+    tapPointer = null;
+    tapDown = null;
+  }
+
+  void closeGallery() {
+    if (!canHandleTap || !Navigator.of(context).canPop()) return;
+    closing = true;
+    cancelPendingTap();
+    Navigator.of(context).pop();
+  }
 
   @override
   void didChangeDependencies() {
@@ -426,6 +481,7 @@ class _GalleryPageState extends State<GalleryPage>
   }
 
   void routeStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.reverse) cancelPendingTap();
     final complete = status == AnimationStatus.completed;
     final returning =
         status == AnimationStatus.reverse ||
@@ -604,6 +660,7 @@ class _GalleryPageState extends State<GalleryPage>
   }
 
   void registerTap(Offset position) {
+    if (!canHandleTap) return;
     if (tapTimer?.isActive == true &&
         pendingTap != null &&
         (position - pendingTap!).distance <= kDoubleTapSlop) {
@@ -614,6 +671,7 @@ class _GalleryPageState extends State<GalleryPage>
     }
     tapTimer?.cancel();
     if (pendingTap != null) handleTap(pendingTap!);
+    if (!canHandleTap) return;
     pendingTap = position;
     tapTimer = Timer(kDoubleTapTimeout, () {
       final pending = pendingTap;
@@ -624,12 +682,13 @@ class _GalleryPageState extends State<GalleryPage>
   }
 
   void handleTap(Offset position) {
+    if (!canHandleTap) return;
     final width = MediaQuery.sizeOf(context).width;
     HapticFeedbackUtil.selection();
     if (position.dx >= width / 3 && position.dx < width * 2 / 3) {
       setState(() => chrome = !chrome);
     } else {
-      Navigator.of(context).pop();
+      closeGallery();
     }
   }
 
@@ -707,6 +766,11 @@ class _GalleryPageState extends State<GalleryPage>
     return ExtendedImageSlidePage(
       slideAxis: SlideAxis.horizontal,
       slideType: SlideType.onlyImage,
+      slideEndHandler: (
+        offset, {
+        ExtendedImageSlidePageState? state,
+        ScaleEndDetails? details,
+      }) => canHandleTap && Navigator.of(context).canPop() ? null : false,
       onSlidingPage: (state) {
         if (mounted && sliding != state.isSliding) {
           setState(() => sliding = state.isSliding);
@@ -758,6 +822,7 @@ class _GalleryPageState extends State<GalleryPage>
                         mode: ExtendedImageMode.gesture,
                         enableSlideOutPage: true,
                         onDoubleTap: (state) {
+                          if (!canHandleTap) return;
                           HapticFeedbackUtil.selection();
                           final begin = state.gestureDetails?.totalScale ?? 1;
                           final decoded = state
@@ -858,6 +923,8 @@ class _GalleryPageState extends State<GalleryPage>
                           enabled: index == current,
                           child: Hero(
                             tag: forumGalleryHeroTag(scope, index, url),
+                            createRectTween: (a, b) =>
+                                RectTween(begin: a, end: b),
                             flightShuttleBuilder: forumGalleryFlight,
                             child: page,
                           ),
@@ -888,7 +955,7 @@ class _GalleryPageState extends State<GalleryPage>
                           button(
                             '返回',
                             Icons.arrow_back_rounded,
-                            () => Navigator.pop(context),
+                            closeGallery,
                             opacity,
                           ),
                           Opacity(

@@ -768,33 +768,37 @@ class _HtmlContentState extends State<HtmlContent> {
                         heroScope: galleryScope,
                         previews: List.of(previews),
                       ),
-                child: Hero(
-                  tag: forumGalleryHeroTag(galleryScope, imageIndex, url),
-                  flightShuttleBuilder: forumGalleryFlight,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 440),
-                      child: Image.network(
-                        previewUrl,
-                        headers: siteImageHeaders(
+                child: Listener(
+                  behavior: HitTestBehavior.opaque,
+                  child: Hero(
+                    tag: forumGalleryHeroTag(galleryScope, imageIndex, url),
+                    createRectTween: (a, b) => RectTween(begin: a, end: b),
+                    flightShuttleBuilder: forumGalleryFlight,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 440),
+                        child: Image.network(
                           previewUrl,
-                          cookie: widget.cookie,
-                        ),
-                        fit: BoxFit.contain,
-                        cacheWidth: 1200,
-                        loadingBuilder: (context, child, progress) =>
-                            progress == null
-                            ? child
-                            : const SizedBox(
-                                height: 100,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
+                          headers: siteImageHeaders(
+                            previewUrl,
+                            cookie: widget.cookie,
+                          ),
+                          fit: BoxFit.contain,
+                          cacheWidth: 1200,
+                          loadingBuilder: (context, child, progress) =>
+                              progress == null
+                              ? child
+                              : const SizedBox(
+                                  height: 100,
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 ),
-                              ),
-                        errorBuilder: (_, e, s) => const SizedBox(
-                          height: 80,
-                          child: Center(child: Text('图片加载失败 · 点击重试查看')),
+                          errorBuilder: (_, e, s) => const SizedBox(
+                            height: 80,
+                            child: Center(child: Text('图片加载失败 · 点击重试查看')),
+                          ),
                         ),
                       ),
                     ),

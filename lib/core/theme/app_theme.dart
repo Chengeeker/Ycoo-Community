@@ -279,6 +279,66 @@ class AppTheme {
     );
   }
 
+  static final WidgetStateProperty<Color?> pressOverlay =
+      WidgetStateProperty.resolveWith<Color?>(
+        (states) =>
+            states.contains(WidgetState.pressed) ? Colors.transparent : null,
+      );
+
+  static ThemeData _withoutPressInk(ThemeData theme) {
+    final overlay = pressOverlay;
+    final buttons = ButtonStyle(overlayColor: overlay);
+    return theme.copyWith(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      textButtonTheme: TextButtonThemeData(
+        style: theme.textButtonTheme.style?.merge(buttons) ?? buttons,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: theme.filledButtonTheme.style?.merge(buttons) ?? buttons,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: theme.elevatedButtonTheme.style?.merge(buttons) ?? buttons,
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: theme.outlinedButtonTheme.style?.merge(buttons) ?? buttons,
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: theme.iconButtonTheme.style?.merge(buttons) ?? buttons,
+      ),
+      checkboxTheme: theme.checkboxTheme.copyWith(overlayColor: overlay),
+      radioTheme: theme.radioTheme.copyWith(overlayColor: overlay),
+      switchTheme: theme.switchTheme.copyWith(overlayColor: overlay),
+      sliderTheme: theme.sliderTheme.copyWith(
+        overlayColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.pressed) ||
+              states.contains(WidgetState.dragged)) {
+            return Colors.transparent;
+          }
+          return WidgetStateProperty.resolveAs(
+                theme.sliderTheme.overlayColor,
+                states,
+              ) ??
+              theme.colorScheme.primary.withValues(
+                alpha: states.contains(WidgetState.hovered)
+                    ? 0.08
+                    : states.contains(WidgetState.focused)
+                    ? 0.1
+                    : 0,
+              );
+        }),
+      ),
+      tabBarTheme: theme.tabBarTheme.copyWith(overlayColor: overlay),
+      navigationBarTheme: theme.navigationBarTheme.copyWith(
+        overlayColor: overlay,
+      ),
+      searchBarTheme: theme.searchBarTheme.copyWith(overlayColor: overlay),
+      floatingActionButtonTheme: theme.floatingActionButtonTheme.copyWith(
+        splashColor: Colors.transparent,
+      ),
+    );
+  }
+
   static ThemeData lightTheme({
     ColorScheme? dynamicColorScheme,
     int colorIndex = 0,
@@ -295,7 +355,7 @@ class AppTheme {
       fontWeightAdjustment: fontWeightAdjustment,
     );
 
-    return ThemeData(
+    final theme = ThemeData(
       useMaterial3: true,
       pageTransitionsTheme: _reviewPageTransitionsTheme,
       splashFactory: const HapticSplashFactory(),
@@ -428,6 +488,7 @@ class AppTheme {
         thickness: 0.5,
       ),
     );
+    return _withoutPressInk(theme);
   }
 
   static ThemeData darkTheme({
@@ -463,7 +524,7 @@ class AppTheme {
       fontWeightAdjustment: fontWeightAdjustment,
     );
 
-    return ThemeData(
+    final theme = ThemeData(
       useMaterial3: true,
       pageTransitionsTheme: _reviewPageTransitionsTheme,
       splashFactory: const HapticSplashFactory(),
@@ -608,6 +669,7 @@ class AppTheme {
         thickness: 0.5,
       ),
     );
+    return _withoutPressInk(theme);
   }
 }
 

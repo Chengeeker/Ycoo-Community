@@ -41,6 +41,38 @@ void main() {
           (call) async => call.method == 'getCookies' ? '' : null,
         );
   });
+  test('cold viewer metadata preserves cache ownership and never replaces server authentication', () async {
+    var account = '7';
+    site.dio.httpClientAdapter = Adapter(
+      (_) async => body({
+        'Variables': {
+          'member_uid': account,
+          'member_username': '用户 $account',
+          'formhash': 'secret-fixture',
+        },
+      }),
+    );
+    await site.syncSession();
+    await Future<void>.delayed(Duration.zero);
+    final snapshot = site.prefs.getString('session.viewer')!;
+    expect(snapshot, isNot(contains('secret-fixture')));
+    final cold = Site(site.prefs);
+    expect(cold.uid, '7');
+    expect(cold.username, '用户 7');
+    expect(cold.formhash, isEmpty);
+    cold.dio.httpClientAdapter = Adapter(
+      (_) async => throw SiteException('离线'),
+    );
+    await expectLater(cold.syncSession(), throwsA(isA<SiteException>()));
+    expect(cold.uid, '7');
+    cold.dio.httpClientAdapter = site.dio.httpClientAdapter;
+    account = '8';
+    await cold.syncSession();
+    expect(cold.uid, '8');
+    await cold.logout();
+    expect(Site(site.prefs).uid, '0');
+    expect(site.prefs.containsKey('session.viewer'), false);
+  });
   test(
     'darkroom numeric-key response is not misreported as a network failure',
     () async {

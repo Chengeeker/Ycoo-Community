@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/design_system/components/review_card.dart';
 import '../core/design_system/components/review_choice_tile.dart';
@@ -47,10 +48,14 @@ class _HomePageState extends State<HomePage>
   late Future<List<Map<String, dynamic>>> forums;
   late final Future<void> initialSession;
   Future<void>? sessionRetry;
+  final forumRequests = <String, Future<List<Map<String, dynamic>>>>{};
   bool sessionResolved = false;
+  late String account;
+  String get navigationKey => 'cache.navigation.$account';
   DateTime? lastTap;
   void selectTab(int value) {
     if (value == index) return;
+    unawaited(widget.site.prefs.setInt(navigationKey, value));
     if (MediaQuery.disableAnimationsOf(context)) {
       tabTransitionController.stop();
       setState(() {
@@ -138,9 +143,76 @@ class _HomePageState extends State<HomePage>
 
   void sessionChanged() {
     if (mounted) {
-      feed.currentState?.change(nextType: feed.currentState?.type);
-      guide.currentState?.change(nextType: guide.currentState?.type);
+      if (account != widget.site.uid) {
+        final resolvingGuest = !sessionResolved && account == '0';
+        account = widget.site.uid;
+        if (resolvingGuest) {
+          feed.currentState?.change(nextType: feed.currentState?.type);
+          guide.currentState?.change(nextType: guide.currentState?.type);
+        } else {
+          feed = GlobalKey<_TopicsPageState>();
+          guide = GlobalKey<_TopicsPageState>();
+          index = (widget.site.prefs.getInt(navigationKey) ?? 0).clamp(0, 3);
+          previousIndex = index;
+          visited
+            ..clear()
+            ..add(index);
+          transitioning = false;
+          tabTransitionController.value = 1;
+          tabIncomingTransition = const AlwaysStoppedAnimation(Offset.zero);
+          tabOutgoingTransition = const AlwaysStoppedAnimation(Offset.zero);
+        }
+        forums = restoreForums();
+      }
       setState(() {});
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> restoreForums() {
+    try {
+      final raw = widget.site.prefs.getString('cache.forums.$account');
+      if (raw != null) {
+        final data = jsonDecode(raw) as Map;
+        final items = (data['items'] as List)
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+        if (items.isNotEmpty) {
+          widget.site.forumStatistics = Map<String, String>.from(
+            data['statistics'] as Map? ?? {},
+          );
+          return Future.value(items);
+        }
+      }
+    } catch (_) {
+      // Invalid snapshots fall back to the normal request.
+    }
+    return initialSession.then(
+      (_) => loadForums(),
+      onError: (_) => loadForums(),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> loadForums() async {
+    final owner = account;
+    final pending = forumRequests[owner];
+    if (pending != null) return pending;
+    final session = widget.site.sessionEpoch;
+    final request = widget.site.forums();
+    forumRequests[owner] = request;
+    try {
+      final items = await request;
+      if (owner == widget.site.uid && session == widget.site.sessionEpoch) {
+        await widget.site.prefs.setString(
+          'cache.forums.$owner',
+          jsonEncode({
+            'items': items,
+            'statistics': widget.site.forumStatistics,
+          }),
+        );
+      }
+      return items;
+    } finally {
+      if (identical(forumRequests[owner], request)) forumRequests.remove(owner);
     }
   }
 
@@ -170,6 +242,12 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
+    account = widget.site.uid;
+    index = (widget.site.prefs.getInt(navigationKey) ?? 0).clamp(0, 3);
+    previousIndex = index;
+    visited
+      ..clear()
+      ..add(index);
     tabTransitionController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 260),
@@ -182,14 +260,12 @@ class _HomePageState extends State<HomePage>
     tabIncomingTransition = const AlwaysStoppedAnimation(Offset.zero);
     tabOutgoingTransition = const AlwaysStoppedAnimation(Offset.zero);
     final session = initialSession = widget.site.syncSession();
-    forums = session.then(
-      (_) => widget.site.forums(),
-      onError: (_) => widget.site.forums(),
-    );
+    forums = restoreForums();
     widget.site.addListener(sessionChanged);
     session
         .then((_) async {
           sessionResolved = true;
+          if (mounted && account != widget.site.uid) sessionChanged();
           if (mounted) setState(() {});
           await widget.site.maybeAutoSignIn();
         })
@@ -220,7 +296,7 @@ class _HomePageState extends State<HomePage>
           key: ValueKey(widget.site.uid),
           forums: forums,
           onRefresh: () async {
-            final next = widget.site.forums();
+            final next = loadForums();
             setState(() => forums = next);
             await next;
           },
@@ -307,7 +383,8 @@ class TopicsPage extends StatefulWidget {
   State<TopicsPage> createState() => _TopicsPageState();
 }
 
-class _TopicsPageState extends State<TopicsPage> with TickerProviderStateMixin {
+class _TopicsPageState extends State<TopicsPage>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   static const followingViews = [
     'following',
     'following_forums',
@@ -315,7 +392,10 @@ class _TopicsPageState extends State<TopicsPage> with TickerProviderStateMixin {
   ];
   late final TabController homeTabs;
   late final TabController followingTabs;
-  final scroll = ScrollController();
+  late final ScrollController scroll;
+  late String account;
+  Timer? positionTimer;
+  double? lastOffset;
   final items = <Topic>[];
   String view = 'portal';
   String? type;
@@ -325,11 +405,72 @@ class _TopicsPageState extends State<TopicsPage> with TickerProviderStateMixin {
   Object? error;
   int page = 0, epoch = 0, selectionEpoch = 0;
   String get cacheKey =>
-      'cache.v2.${widget.site.uid}.${widget.fid ?? view}.${type ?? 'all'}';
+      'cache.v2.$account.${widget.fid ?? view}.${type ?? 'all'}';
+  String get selectionKey =>
+      'cache.selection.$account.${widget.home
+          ? 'home'
+          : widget.guide
+          ? 'guide'
+          : widget.fid ?? widget.initialView}';
+  double get savedOffset {
+    final value = widget.site.prefs.getDouble('$cacheKey.offset') ?? 0;
+    return value.isFinite && value >= 0 ? value : 0;
+  }
+
+  void savePosition() {
+    positionTimer?.cancel();
+    final offset = scroll.hasClients ? scroll.offset : lastOffset;
+    if (account == widget.site.uid &&
+        widget.site.prefs.containsKey(cacheKey) &&
+        items.isNotEmpty &&
+        offset != null &&
+        offset.isFinite) {
+      unawaited(
+        widget.site.prefs.setDouble(
+          '$cacheKey.offset',
+          offset.clamp(0, double.infinity),
+        ),
+      );
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) savePosition();
+  }
+
   @override
   void initState() {
     super.initState();
+    account = widget.site.uid;
     view = widget.initialView;
+    try {
+      final selection =
+          jsonDecode(widget.site.prefs.getString(selectionKey) ?? '{}') as Map;
+      final savedView = selection['view'];
+      if ([
+        widget.initialView,
+        'circles',
+        'portal',
+        ...followingViews,
+        'newthread',
+        'hot',
+        'digest',
+        'new',
+        'sofa',
+      ].contains(savedView)) {
+        view = savedView as String;
+      }
+      if (widget.fid != null) type = selection['type'] as String?;
+    } catch (_) {
+      // Older installs have content snapshots without a saved selection.
+    }
+    scroll = ScrollController(
+      initialScrollOffset: savedOffset,
+      keepScrollOffset: false,
+    );
+    lastOffset = savedOffset;
+    WidgetsBinding.instance.addObserver(this);
     homeTabs = TabController(
       length: 3,
       vsync: this,
@@ -337,12 +478,20 @@ class _TopicsPageState extends State<TopicsPage> with TickerProviderStateMixin {
         'circles',
         'portal',
         'following',
-      ].indexOf(view).clamp(0, 2),
+      ].indexOf(view.startsWith('following') ? 'following' : view).clamp(0, 2),
     );
-    followingTabs = TabController(length: 3, vsync: this);
+    followingTabs = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: followingViews.indexOf(view).clamp(0, 2),
+    );
     restore();
     scroll.addListener(() {
+      lastOffset = scroll.offset;
+      positionTimer?.cancel();
+      positionTimer = Timer(const Duration(milliseconds: 300), savePosition);
       if (scroll.position.extentAfter < 450 &&
+          scroll.position.isScrollingNotifier.value &&
           !loading &&
           more &&
           error == null) {
@@ -470,7 +619,7 @@ class _TopicsPageState extends State<TopicsPage> with TickerProviderStateMixin {
         page: next,
         type: type,
       );
-      if (!mounted || generation != epoch) return;
+      if (!mounted || generation != epoch || widget.site.uid != account) return;
       setState(() {
         if (refresh) items.clear();
         final seen = items.map((e) => e.id).toSet();
@@ -514,6 +663,8 @@ class _TopicsPageState extends State<TopicsPage> with TickerProviderStateMixin {
   }
 
   void change({String? nextView, String? nextType}) {
+    savePosition();
+    account = widget.site.uid;
     epoch++;
     setState(() {
       view = nextView ?? view;
@@ -525,8 +676,20 @@ class _TopicsPageState extends State<TopicsPage> with TickerProviderStateMixin {
       loading = false;
       error = null;
     });
-    if (scroll.hasClients) scroll.jumpTo(0);
+    unawaited(
+      widget.site.prefs.setString(
+        selectionKey,
+        jsonEncode({'view': view, 'type': type}),
+      ),
+    );
     restore();
+    lastOffset = savedOffset;
+    final selected = cacheKey;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && selected == cacheKey && scroll.hasClients) {
+        scroll.jumpTo(savedOffset.clamp(0, scroll.position.maxScrollExtent));
+      }
+    });
   }
 
   Future<void> chooseView(String nextView) async {
@@ -588,6 +751,9 @@ class _TopicsPageState extends State<TopicsPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    savePosition();
+    positionTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     epoch++;
     homeTabs.dispose();
     followingTabs.dispose();
@@ -915,7 +1081,11 @@ class TopicTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      onTap: () => push(context, ThreadPage(site, topic)),
+      onTap: () {
+        if (!isForumGalleryTransitioning(context)) {
+          push(context, ThreadPage(site, topic));
+        }
+      },
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
         child: Column(
@@ -1048,7 +1218,7 @@ class TopicTile extends StatelessWidget {
                       minimumSize: const Size(48, 32),
                       tapTargetSize: MaterialTapTargetSize.padded,
                       shape: const StadiumBorder(),
-                    ),
+                    ).copyWith(overlayColor: AppTheme.pressOverlay),
                     onPressed: () async {
                       if (!site.loggedIn) {
                         await push(context, LoginPage(site));
@@ -1171,7 +1341,7 @@ class TopicTile extends StatelessWidget {
                         foregroundColor: theme.colorScheme.onSurfaceVariant,
                         minimumSize: const Size(48, 48),
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                      ),
+                      ).copyWith(overlayColor: AppTheme.pressOverlay),
                       onPressed: () => openWeb(
                         context,
                         '/thread-${topic.id}-1-1.html?mobile=2',
@@ -1234,44 +1404,180 @@ class TopicTile extends StatelessWidget {
     ),
   );
 
-  Widget _image(BuildContext context, int index) {
-    final url = topic.images[index];
-    return InkWell(
-      onTap: () => openGallery(context, topic.images, index, heroScope: topic),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Hero(
-              tag: forumGalleryHeroTag(topic, index, url),
-              flightShuttleBuilder: forumGalleryFlight,
-              child: Image.network(
-                url,
-                fit: BoxFit.cover,
-                cacheWidth: 900,
-                headers: siteImageHeaders(url),
-                errorBuilder: (_, _, _) => ColoredBox(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Icon(Icons.image_outlined),
-                ),
+  Widget _image(BuildContext context, int index) => _TopicThumbnail(
+    site,
+    topic,
+    index,
+    key: ValueKey((site, site.sessionEpoch, site.uid, topic, index)),
+  );
+}
+
+class _TopicThumbnail extends StatefulWidget {
+  const _TopicThumbnail(this.site, this.topic, this.index, {super.key});
+  final Site site;
+  final Topic topic;
+  final int index;
+  @override
+  State<_TopicThumbnail> createState() => _TopicThumbnailState();
+}
+
+class _TopicThumbnailState extends State<_TopicThumbnail> {
+  late final int epoch;
+  late final String account;
+  late List<String> urls;
+  String cookie = '';
+  bool ready = false, triedOriginal = false, repairing = false;
+  int attempt = 0;
+  String get url => urls[widget.index];
+  bool get active =>
+      mounted &&
+      epoch == widget.site.sessionEpoch &&
+      account == widget.site.uid;
+  ImageProvider get provider => ResizeImage.resizeIfNeeded(
+    900,
+    null,
+    NetworkImage(url, headers: siteImageHeaders(url, cookie: cookie)),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    epoch = widget.site.sessionEpoch;
+    account = widget.site.uid;
+    urls = widget.topic.images
+        .map((image) => normalizeSiteLink(image).toString())
+        .toList();
+    loadCookie();
+  }
+
+  Future<String> cookieFor(String image) async {
+    final uri = Uri.tryParse(image);
+    if (uri == null || !isSite(uri)) return '';
+    try {
+      return await Site.cookies.invokeMethod<String>('getCookies', {
+            'url': image,
+          }) ??
+          '';
+    } on MissingPluginException {
+      return '';
+    } on PlatformException {
+      return '';
+    }
+  }
+
+  Future<void> loadCookie({bool retry = false}) async {
+    final next = await cookieFor(url);
+    if (!active) return;
+    if (retry) await provider.evict();
+    if (!active) return;
+    setState(() {
+      cookie = next;
+      ready = true;
+      if (retry) {
+        triedOriginal = false;
+        attempt++;
+      }
+    });
+  }
+
+  Future<void> repair() async {
+    if (!active) return;
+    setState(() => repairing = true);
+    try {
+      final originals = await widget.site.topicImageOriginals(widget.topic.id);
+      if (!active) return;
+      final resolved = urls
+          .map((image) => originals[forumThumbnailAid(image)] ?? image)
+          .toList();
+      if (resolved[widget.index] != url) {
+        final nextCookie = await cookieFor(resolved[widget.index]);
+        if (!active) return;
+        setState(() {
+          urls = resolved;
+          cookie = nextCookie;
+          attempt++;
+        });
+      }
+    } catch (_) {
+      // Keep the failed image retryable when metadata or permissions are unavailable.
+    } finally {
+      if (active) setState(() => repairing = false);
+    }
+  }
+
+  Widget failed(BuildContext context, Object error, StackTrace? stack) {
+    if (!triedOriginal &&
+        error is NetworkImageLoadException &&
+        const {403, 404, 410}.contains(error.statusCode) &&
+        forumThumbnailAid(url) != null) {
+      triedOriginal = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => repair());
+    }
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: repairing
+            ? const CircularProgressIndicator()
+            : IconButton(
+                tooltip: '图片加载失败，点击重试',
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: () {
+                  setState(() => ready = false);
+                  loadCookie(retry: true);
+                },
               ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: ready && active
+        ? () => openGallery(
+            context,
+            urls,
+            widget.index,
+            cookie: cookie,
+            heroScope: widget.topic,
+          )
+        : null,
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Listener(
+            behavior: HitTestBehavior.opaque,
+            child: Hero(
+              tag: forumGalleryHeroTag(widget.topic, widget.index, url),
+              createRectTween: (a, b) => RectTween(begin: a, end: b),
+              flightShuttleBuilder: forumGalleryFlight,
+              child: ready && active
+                  ? Image(
+                      image: provider,
+                      key: ValueKey(attempt),
+                      fit: BoxFit.cover,
+                      errorBuilder: failed,
+                    )
+                  : const Center(child: CircularProgressIndicator()),
             ),
-            if (index == 2 && topic.images.length > 3)
-              ColoredBox(
+          ),
+          if (widget.index == 2 && urls.length > 3)
+            IgnorePointer(
+              child: ColoredBox(
                 color: Colors.black45,
                 child: Center(
                   child: Text(
-                    '+${topic.images.length - 3}',
+                    '+${urls.length - 3}',
                     style: const TextStyle(color: Colors.white, fontSize: 24),
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _CommunityStat extends StatelessWidget {
@@ -2234,7 +2540,7 @@ class SettingsPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'v1.2.12',
+                    'v1.2.15',
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -2294,7 +2600,7 @@ class SettingsPage extends StatelessWidget {
             onPressed: () => showLicensePage(
               context: dialogContext,
               applicationName: '源社区',
-              applicationVersion: '1.2.12',
+              applicationVersion: '1.2.15',
               applicationIcon: icon,
             ),
             child: const Text('开源许可'),
@@ -2400,7 +2706,7 @@ class SettingsPage extends StatelessWidget {
             children: [
               ReviewPreferenceTile(
                 title: '关于源社区',
-                subtitle: '1.2.12',
+                subtitle: '1.2.15',
                 leading: const Icon(Icons.info_outline),
                 onTap: () => _showAbout(context),
               ),

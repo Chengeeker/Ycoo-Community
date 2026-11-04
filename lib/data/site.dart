@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -34,6 +35,18 @@ Map<String, String> siteImageHeaders(String url, {String cookie = ''}) {
     if (sameSite) 'Referer': '$siteOrigin/',
     if (sameSite && cookie.isNotEmpty) 'Cookie': cookie,
   };
+}
+
+String? forumThumbnailAid(String url) {
+  final uri = normalizeSiteLink(url);
+  if (!isSite(uri)) return null;
+  final match = RegExp(
+    r'^/data/attachment/image/(\d{3})/(\d{2})/(\d{2})/(\d{2})_\d+_\d+\.(?:jpg|jpeg|png|webp)$',
+    caseSensitive: false,
+  ).firstMatch(uri.path);
+  return match == null
+      ? null
+      : int.parse('${match[1]}${match[2]}${match[3]}${match[4]}').toString();
 }
 
 bool isSite(Uri uri) =>
@@ -284,7 +297,20 @@ class SignData {
 }
 
 class Site extends ChangeNotifier {
-  Site(this.prefs);
+  Site(this.prefs) {
+    try {
+      final cached =
+          jsonDecode(prefs.getString('session.viewer') ?? '{}') as Map;
+      final id = '${cached['uid'] ?? ''}';
+      if (RegExp(r'^[1-9]\d*$').hasMatch(id)) {
+        uid = id;
+        username = '${cached['name'] ?? ''}';
+        avatar = '${cached['avatar'] ?? ''}';
+      }
+    } catch (_) {
+      // Ignore damaged display metadata; the server still verifies the session.
+    }
+  }
   final SharedPreferences prefs;
   Map<String, String> forumStatistics = {};
   static const cookies = MethodChannel('ycoo.net.php/session');
@@ -303,7 +329,66 @@ class Site extends ChangeNotifier {
   );
   String uid = '0', username = '', formhash = '', avatar = '';
   int sessionEpoch = 0;
+  final _thumbnailRequests =
+      <(int, String, String), Future<Map<String, String>>>{};
   bool get loggedIn => uid != '0' && uid.isNotEmpty;
+
+  Future<Map<String, String>> topicImageOriginals(String tid) async {
+    if (!RegExp(r'^\d+$').hasMatch(tid)) return {};
+    final key = (sessionEpoch, uid, tid);
+    final pending = _thumbnailRequests[key];
+    if (pending != null) return pending;
+    final task = _readTopicImageOriginals(tid, sessionEpoch, uid);
+    _thumbnailRequests[key] = task;
+    try {
+      return await task;
+    } finally {
+      _thumbnailRequests.remove(key);
+    }
+  }
+
+  Future<Map<String, String>> _readTopicImageOriginals(
+    String tid,
+    int epoch,
+    String account,
+  ) async {
+    final data = await api('viewthread', query: {'tid': tid, 'page': 1});
+    if (epoch != sessionEpoch || account != uid) {
+      throw SiteException('登录状态已变化，请刷新重试');
+    }
+    if (data['thread'] is! Map || '${data['thread']['tid']}' != tid) {
+      throw SiteException('图片所属帖子不匹配');
+    }
+    if ('${data['forum_threadpay']}' == '1') return {};
+    final posts = data['postlist'];
+    if (posts is! List) return {};
+    final first = posts
+        .whereType<Map>()
+        .where((post) => '${post['first']}' == '1')
+        .firstOrNull;
+    final attachments = first?['attachments'];
+    if (attachments is! Map) return {};
+    final originals = <String, String>{};
+    for (final entry in attachments.entries) {
+      final item = entry.value;
+      if (item is! Map ||
+          '${item['isimage']}' != '1' ||
+          (number(item['price']) > 0 && '${item['payed']}' != '1') ||
+          '${item['attachment'] ?? ''}'.isEmpty) {
+        continue;
+      }
+      final uri = normalizeSiteLink(
+        '${item['url'] ?? ''}${item['attachment']}',
+      );
+      if (['https', 'http'].contains(uri.scheme) &&
+          uri.host.isNotEmpty &&
+          uri.userInfo.isEmpty) {
+        originals['${entry.key}'] = uri.toString();
+      }
+    }
+    return originals;
+  }
+
   Future<Response<dynamic>> request(
     String path, {
     Map<String, dynamic>? query,
@@ -994,6 +1079,12 @@ class Site extends ChangeNotifier {
         ? discuzAvatarUrl(uid)
         : siteUri(memberAvatar).toString();
     if (vars['formhash'] != null) formhash = '${vars['formhash']}';
+    unawaited(
+      prefs.setString(
+        'session.viewer',
+        jsonEncode({'uid': uid, 'name': username, 'avatar': avatar}),
+      ),
+    );
     if (changed) {
       sessionEpoch++;
       notifyListeners();
@@ -1120,6 +1211,7 @@ class Site extends ChangeNotifier {
     sessionEpoch++;
     final account = uid;
     await cookies.invokeMethod('clearCookies');
+    await prefs.remove('session.viewer');
     uid = '0';
     username = '';
     formhash = '';
