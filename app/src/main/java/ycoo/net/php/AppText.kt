@@ -1,0 +1,41 @@
+package ycoo.net.php
+
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.unit.TextUnit
+
+internal val LocalAppWeightDelta = staticCompositionLocalOf { 0 }
+
+@Composable
+internal fun appWeightStyle(style: TextStyle): TextStyle {
+    val delta = LocalAppWeightDelta.current
+    return if (delta == 0) style else style.copy(fontWeight = FontWeight(
+        ((style.fontWeight ?: LocalTextStyle.current.fontWeight ?: FontWeight.Normal).weight + delta).coerceIn(100, 900)))
+}
+
+// Same local Text entry point as RedNote; keep explicit weights and input text in sync.
+@Composable
+internal fun Text(
+    text: String, modifier: Modifier = Modifier, color: Color = Color.Unspecified,
+    fontSize: TextUnit = TextUnit.Unspecified, fontStyle: FontStyle? = null,
+    fontWeight: FontWeight? = null, fontFamily: FontFamily? = null,
+    letterSpacing: TextUnit = TextUnit.Unspecified, textDecoration: TextDecoration? = null,
+    textAlign: TextAlign? = null, lineHeight: TextUnit = TextUnit.Unspecified,
+    overflow: TextOverflow = TextOverflow.Clip, softWrap: Boolean = true,
+    maxLines: Int = Int.MAX_VALUE, minLines: Int = 1,
+    onTextLayout: ((TextLayoutResult) -> Unit)? = null, style: TextStyle = LocalTextStyle.current,
+) {
+    val delta = LocalAppWeightDelta.current
+    val weight = if (delta == 0) fontWeight else FontWeight(
+        ((fontWeight ?: style.fontWeight ?: LocalTextStyle.current.fontWeight ?: FontWeight.Normal).weight + delta).coerceIn(100, 900))
+    androidx.compose.material3.Text(text = text, modifier = modifier, color = color, fontSize = fontSize,
+        fontStyle = fontStyle, fontWeight = weight, fontFamily = fontFamily, letterSpacing = letterSpacing,
+        textDecoration = textDecoration, textAlign = textAlign, lineHeight = lineHeight, overflow = overflow,
+        softWrap = softWrap, maxLines = maxLines, minLines = minLines, onTextLayout = onTextLayout, style = style)
+}

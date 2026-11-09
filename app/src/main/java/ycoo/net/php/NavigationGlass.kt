@@ -317,7 +317,6 @@ internal fun navigationGlassMotion(
 internal val NavigationLensPosition = SemanticsPropertyKey<Float>("NavigationLensPosition")
 internal val NavigationLensExpansion = SemanticsPropertyKey<Float>("NavigationLensExpansion")
 
-@RequiresApi(33)
 @Composable
 internal fun RedNoteGlassNavigation(
     backdrop: Backdrop,
@@ -332,6 +331,7 @@ internal fun RedNoteGlassNavigation(
 ) {
     val tabCount = labelNames.size
     val site = LocalSite.current
+    site.settingsRevision
     val density = LocalDensity.current
     val rootView = LocalView.current
     val scope = rememberCoroutineScope()
@@ -364,15 +364,13 @@ internal fun RedNoteGlassNavigation(
                     GlassShadow(1.1f, .55f, Color.Black.copy(alpha = .011f)),
                 )
             )
-            GlassNavigationGpu(
-                backdrop, tabCount, labelsLayer, selectedLayer, lens, press, dark,
-                colors.background,
+            NavigationGlassMaterial(backdrop.layer, { backdrop.origin }, { backdrop.frame },
+                labelsLayer, selectedLayer, lens, press, dark, colors.background,
+                site.prefs.getBoolean("translucentNavigationGlass", false), tabCount,
                 Modifier.fillMaxSize().testTag("navigation-glass-gpu").semantics {
                     this[NavigationLensPosition] = lens
                     this[NavigationLensExpansion] = press
-                },
-                onFailure,
-            )
+                })
             GlassTabLabels(barWidth, labelNames, icons, unselected, labelsLayer, FontWeight.Medium)
             GlassTabLabels(barWidth, labelNames, activeIcons, colors.primary, selectedLayer, FontWeight.SemiBold)
         }

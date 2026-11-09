@@ -32,6 +32,23 @@ import kotlinx.coroutines.*
     var error by remember(player){mutableStateOf("")};var ready by remember(player){mutableStateOf(false)};var playing by remember(player){mutableStateOf(false)};var ratio by remember(player){mutableFloatStateOf(16/9f)}
     var controls by remember(player){mutableStateOf(true)};var position by remember(player){mutableLongStateOf(0)};var duration by remember(player){mutableLongStateOf(1)};var scrub by remember(player){mutableStateOf<Float?>(null)};var speed by remember(player){mutableFloatStateOf(1f)}
     val owner=LocalLifecycleOwner.current
+    val activity = androidx.activity.compose.LocalActivity.current
+    var fullscreen by remember { mutableStateOf(false) }
+    var menu by remember(player) { mutableStateOf("") }
+    var interaction by remember { mutableIntStateOf(0) }
+    val qualityOptions = rememberVideoTrackChoices(player)
+    var selectedQuality by remember(player) { mutableStateOf("自动") }
+    DisposableEffect(activity) {
+        val previous = activity?.requestedOrientation
+        onDispose { if (previous != null) activity.requestedOrientation = previous }
+    }
+    fun rotate() {
+        fullscreen = !fullscreen
+        activity?.requestedOrientation = if (fullscreen) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        interaction++
+    }
+    androidx.activity.compose.BackHandler(enabled = fullscreen) { rotate() }
     val active=LocalPageActive.current
     LaunchedEffect(active){if(!active)player.pause()}
     DisposableEffect(player,owner){
@@ -46,36 +63,32 @@ import kotlinx.coroutines.*
         onDispose{owner.lifecycle.removeObserver(observer);player.removeListener(listener);player.release()}
     }
     LaunchedEffect(player,playing){while(playing){position=player.currentPosition;delay(200)};position=player.currentPosition}
-    LaunchedEffect(controls,playing){if(controls&&playing){delay(4000);controls=false}}
+    LaunchedEffect(controls,playing,menu,interaction){if(controls&&playing&&menu.isEmpty()){delay(4000);controls=false}}
     fun toggle(){runCatching{if(player.isPlaying)player.pause()else{player.play();controls=true}}.onFailure{error="视频播放失败"}}
-    val opacity by animateFloatAsState(if(controls)1f else 0f,tween(180),label="video controls")
-    Scaffold(topBar={
-        FrostedHeader {
-            TopAppBar(
-                expandedHeight=56.dp,
-                colors=TopAppBarDefaults.topAppBarColors(containerColor=Color.Transparent),
-                title={Text("视频播放",fontSize=18.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)},
-                navigationIcon={IconButton(onClick=tap(close)){Icon(Icons.Rounded.ArrowBack,"返回")}}
-            )
-        }
-    }){padding->
-        when{error.isNotEmpty()->Box(Modifier.fillMaxSize().padding(padding),contentAlignment=Alignment.Center){Failure(error,{revision++})};!ready->Box(Modifier.fillMaxSize().padding(padding),contentAlignment=Alignment.Center){CircularProgressIndicator()};else->Column(Modifier.fillMaxSize().padding(padding)){
-            Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black),contentAlignment=Alignment.Center){
-                Box(Modifier.fillMaxWidth().aspectRatio(ratio.coerceAtLeast(.01f))){
-                    AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false}},update={it.player=player},modifier=Modifier.fillMaxSize())
-                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.24f*opacity)).clickable(onClick=tap{controls=!controls}),contentAlignment=Alignment.Center){if(controls)FilledIconButton(onClick=tap(::toggle),modifier=Modifier.size(56.dp)){Icon(if(playing)Icons.Rounded.Pause else Icons.Rounded.PlayArrow,if(playing)"暂停"else"播放",Modifier.size(36.dp))}}
-                }
-            }
-            Surface(color=MaterialTheme.colorScheme.surfaceContainer){Column(Modifier.navigationBarsPadding().padding(start=16.dp,top=4.dp,end=16.dp,bottom=8.dp)){
-                OriginalSlider(value=(scrub ?: position.toFloat()).coerceIn(0f,duration.toFloat()),onValueChange={scrub=it},valueRange=0f..duration.toFloat(),onValueChangeFinished={scrub?.let{player.seekTo(it.toLong());position=it.toLong()};scrub=null})
-                Row(verticalAlignment=Alignment.CenterVertically){Text(formatDuration((scrub ?: position.toFloat()).toLong()),style=MaterialTheme.typography.labelMedium);Text(" / ");Text(formatDuration(duration),style=MaterialTheme.typography.labelMedium);Spacer(Modifier.weight(1f))
-                    var menu by remember{mutableStateOf(false)}
-                    Box{Text("${speed}×",Modifier.clickable{menu=true}.padding(12.dp));DropdownMenu(menu,{menu=false}){listOf(.5f,.75f,1f,1.25f,1.5f,2f).forEach{value->DropdownMenuItem(text={Text("${value}×")},onClick={menu=false;runCatching{player.setPlaybackSpeed(value);speed=value}.onFailure{site.status="无法调整播放速度"}})}}}
-                    IconButton(onClick=tap(::toggle)){Icon(if(playing)Icons.Rounded.Pause else Icons.Rounded.PlayArrow,if(playing)"暂停"else"播放")}
-                }
-            }}
-        }}
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        AndroidView(factory = { PlayerView(it).apply { useController = false; this.player = player } },
+            update = { it.player = player }, modifier = Modifier.fillMaxSize())
+        Box(Modifier.fillMaxSize().clickable(interactionSource = null, indication = null, onClick = tap { controls = !controls; interaction++ }))
+        if (error.isNotEmpty()) Box(Modifier.align(Alignment.Center)) { Failure(error, { revision++ }) }
+        else if (!ready) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White.copy(alpha = .7f))
+        if (controls || !ready || error.isNotEmpty())
+            ReviewVideoTop(Modifier.align(Alignment.TopCenter), "视频播放", fullscreen = fullscreen, close = { if (fullscreen) rotate() else close() })
+        if (controls && ready && error.isEmpty()) ReviewVideoBottom(
+            Modifier.align(Alignment.BottomCenter), position, duration, player.bufferedPosition.coerceAtLeast(0), playing, speed, fullscreen,
+            quality = selectedQuality.takeIf { qualityOptions.isNotEmpty() },
+            onPlay = ::toggle, onSpeed = { menu = "speed"; interaction++ }, onQuality = { menu = "quality"; interaction++ },
+            onFullscreen = ::rotate, onSeek = { player.seekTo(it); position = it; interaction++ })
     }
+    val dismiss: () -> Unit = { menu = ""; interaction++ }
+    if (menu == "speed") ReviewVideoChoices("播放倍速", standardVideoSpeeds.map { "${it}X" }, "${speed}X", dismiss) {
+        val requested = it.removeSuffix("X").toFloat()
+        runCatching { player.setPlaybackSpeed(requested); speed = requested }.onFailure { site.status = "无法调整播放速度" }
+    }
+    if (menu == "quality" && qualityOptions.isNotEmpty())
+        ReviewVideoChoices("清晰度选择", listOf("自动") + qualityOptions.keys, selectedQuality, dismiss) {
+            selectVideoTrack(player, qualityOptions[it]); selectedQuality = it
+        }
+    LaunchedEffect(qualityOptions.isEmpty()) { if (qualityOptions.isEmpty() && menu == "quality") dismiss() }
 }
 fun formatDuration(milliseconds:Long):String {
     val seconds=(milliseconds/1000).coerceAtLeast(0)

@@ -52,7 +52,7 @@ fun accountOpen(site:Site,nav:Nav,route:String,title:String?=null) {if(title!=nu
         verticalArrangement=Arrangement.spacedBy(16.dp),
         overscrollEffect=null
     ) {
-        item {SectionCard {
+        item {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {
             Row(Modifier.fillMaxWidth().clickable(onClick=tap {accountOpen(site,nav,"profile:${site.uid}")}).padding(if(site.loggedIn)PaddingValues(start=20.dp,top=12.dp,end=16.dp,bottom=8.dp)else PaddingValues(20.dp)).heightIn(min=72.dp),verticalAlignment=Alignment.CenterVertically) {
                 if(accountAvatar!=null) {
                     val modifier=Modifier.size(60.dp).clip(CircleShape)
@@ -69,13 +69,13 @@ fun accountOpen(site:Site,nav:Nav,route:String,title:String?=null) {if(title!=nu
             }
             if(site.loggedIn) {OriginalDivider(Modifier.padding(horizontal=16.dp),space=1.dp); StatRow(listOf("主题" to stats?.optString("threads","—").orEmpty(),"帖子" to stats?.optString("posts","—").orEmpty(),"积分" to stats?.optString("credits","—").orEmpty()))}
         }}
-        item {SectionCard {Column(Modifier.padding(start=8.dp,top=12.dp,end=8.dp,bottom=8.dp)) {
+        item {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {Column(Modifier.padding(start=8.dp,top=12.dp,end=8.dp,bottom=8.dp)) {
             Text("我的内容",Modifier.padding(start=8.dp,end=8.dp,bottom=8.dp),style=MaterialTheme.typography.titleMedium)
             shortcuts.chunked(4).forEach {row-> Row {row.forEachIndexed {i,a-> Column(Modifier.weight(1f).height(86.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick=tap {accountOpen(site,nav,a.route,a.label)}),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
                 Icon(a.icon,null,Modifier.size(28.dp),tint=listOf(s.primary,s.tertiary,s.secondary,s.error)[i]); Spacer(Modifier.height(8.dp)); Text(a.label,style=MaterialTheme.typography.labelMedium,maxLines=1,overflow=TextOverflow.Ellipsis)
             }}}}
         }}}
-        item {SectionCard {
+        item {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {
             Preference("消息提醒",Icons.Outlined.NotificationsNone,tint=s.primary,onClick={accountOpen(site,nav,"messages")})
             Preference("我的私信",Icons.Outlined.Mail,tint=s.secondary,onClick={accountOpen(site,nav,"messages:mypm")})
             Preference("个性化",Icons.Outlined.Palette,tint=s.tertiary,onClick={nav.open("appearance")})
@@ -107,54 +107,48 @@ fun accountOpen(site:Site,nav:Nav,route:String,title:String?=null) {if(title!=nu
 @Composable fun SettingsPage(site:Site,nav:Nav) {
     var about by remember {mutableStateOf(false)}
     LazyColumn(contentPadding=PaddingValues(start=16.dp,top=LocalPageTop.current+16.dp,end=16.dp,bottom=24.dp)) {
-        item {SectionTitle("账号设置"); SectionCard {Preference("我的账户",Icons.Outlined.AccountCircle,onClick={nav.open("account")})}; Spacer(Modifier.height(16.dp))}
-        item {SectionTitle("偏好与功能"); SectionCard {
+        item {SectionTitle("账号设置"); SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {Preference("我的账户",Icons.Outlined.AccountCircle,onClick={nav.open("account")})}; Spacer(Modifier.height(16.dp))}
+        item {SectionTitle("偏好与功能"); SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {
             Preference("阅读历史",Icons.Rounded.History,onClick={nav.open("history")})
             Preference("个性化",Icons.Outlined.Palette,onClick={nav.open("appearance")})
             Preference("阅读与社区功能",Icons.Outlined.AutoStories,onClick={nav.open("reading")})
             Preference("编辑回复菜单",Icons.Outlined.EditNote,onClick={nav.open("reply-tools")})
         }; Spacer(Modifier.height(16.dp))}
-        item {SectionTitle("内容与服务"); SectionCard {
+        item {SectionTitle("内容与服务"); SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {
             Preference("清除内容缓存",Icons.Outlined.CleaningServices,"保留账户和阅读历史",onClick={site.clearCache(); site.status="内容缓存已清除"})
             Preference("社区服务",Icons.Outlined.Explore,onClick={nav.open("services")})
         }; Spacer(Modifier.height(16.dp))}
-        item {SectionTitle("关于与支持"); SectionCard {Preference("关于源社区",Icons.Outlined.Info,onClick={about=true})}}
+        item {SectionTitle("关于与支持"); SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {Preference("关于源社区",Icons.Outlined.Info,onClick={about=true})}}
     }
     if(about) AboutDialog(nav) {about=false}
 }
 @OptIn(ExperimentalLayoutApi::class)
 @Composable fun AppearancePage(site:Site) {
     site.settingsRevision
-    val supportsDynamicColor = Build.VERSION.SDK_INT >= 31
     LazyColumn(contentPadding=PaddingValues(start=16.dp,top=LocalPageTop.current+12.dp,end=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-        item {SectionCard {SectionTitle("明暗模式"); listOf("跟随系统","浅色模式","深色模式").forEachIndexed {i,label->
-            Row(Modifier.fillMaxWidth().clickable(onClick=tap {site.setting("themeMode",i)}).padding(horizontal=16.dp,vertical=2.dp).heightIn(min=56.dp),verticalAlignment=Alignment.CenterVertically) {
-                RadioButton(site.prefs.getInt("themeMode",0)==i,{site.setting("themeMode",i)},modifier=Modifier.size(40.dp)); Spacer(Modifier.width(16.dp)); Text(label,Modifier.padding(vertical=8.dp),style=MaterialTheme.typography.titleMedium.copy(lineHeight=21.6.sp))
-            }; if(i<2) OriginalDivider(Modifier.padding(start=72.dp),space=1.dp)
-        }; OriginalDivider(Modifier.padding(horizontal=16.dp),space=1.dp); SettingSwitch("pureBlack","纯黑深色模式",Icons.Rounded.Contrast,tint=MaterialTheme.colorScheme.primary)}}
-        item {SectionCard {Column(Modifier.padding(vertical=8.dp)) {
-            SectionTitle("色彩方案")
-            if(supportsDynamicColor) SettingSwitch("dynamicColor","动态取色",Icons.Outlined.AutoAwesome,tint=MaterialTheme.colorScheme.primary)
-            if(!supportsDynamicColor || !site.prefs.getBoolean("dynamicColor",false)) {
-                if(supportsDynamicColor) OriginalDivider(Modifier.padding(horizontal=16.dp),space=1.dp)
-                FlowRow(Modifier.padding(horizontal=12.dp).padding(top=8.dp),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {paletteNames.forEachIndexed {i,label->
-                    FilterChip(site.prefs.getInt("color",0)==i,{site.setting("color",i)},label={Text(label)},leadingIcon={Box(Modifier.size(20.dp).background(paletteSeeds[i],CircleShape))})
-                }}; Spacer(Modifier.height(8.dp))
+        item { AppearanceModes(site.prefs.getInt("themeMode",0), { site.setting("themeMode",it) },
+            site.prefs.getBoolean("pureBlack",false), { site.setting("pureBlack",it) }) }
+        item { AppearancePalette(site.prefs.getBoolean("dynamicColor",false), { site.setting("dynamicColor",it) },
+            site.prefs.getInt("color",0), { site.setting("color",it) }) }
+        item { FontWeightSetting(site.prefs.getBoolean("customFontWeight", false), site.prefs.getInt("fontWeightDelta", 0), "源社区",
+            hapticsEnabled = site.prefs.getBoolean("haptics", true), onReset = { site.setting("customFontWeight", false) },
+            onCommit = { site.setting("fontWeightDelta", it); site.setting("customFontWeight", true) }) }
+        item {
+            val delta = if (site.prefs.getBoolean("customFontWeight", false)) LocalAppWeightDelta.current else systemFontWeightDelta()
+            val type = MaterialTheme.typography
+            MaterialTheme(typography = type.copy(bodyMedium = type.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight((400 + delta).coerceIn(100, 900))))) {
+                FontSizeSetting(site.prefs.getFloat("textScale", 1f)) { site.setting("textScale", it) }
             }
-        }}}
-        item {SectionCard {Row(Modifier.padding(16.dp),verticalAlignment=Alignment.CenterVertically) {
-            Icon(Icons.Rounded.FormatSize,null,tint=MaterialTheme.colorScheme.primary); Spacer(Modifier.width(16.dp)); Column(Modifier.weight(1f)) {
-                Text("应用字体大小",fontSize=15.sp,lineHeight=20.25.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.SemiBold); Text("${kotlin.math.round(site.prefs.getFloat("textScale",1f)*100).toInt()}%",fontSize=12.5.sp,lineHeight=17.5.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                OriginalSlider(site.prefs.getFloat("textScale",1f).coerceIn(.8f,1.4f),{site.setting("textScale",it)},valueRange=.8f..1.4f,steps=11,label="${kotlin.math.round(site.prefs.getFloat("textScale",1f)*100).toInt()}%")
-            }
-        }}}
-        item {SectionCard {SectionTitle("底部导航"); SettingSwitch("floating","使用悬浮底栏",Icons.Rounded.Dock,default=true,tint=MaterialTheme.colorScheme.primary)}}
-        item {SectionCard {SectionTitle("显示效果"); SettingSwitch("liquidGlass","使用液态玻璃效果",Icons.Rounded.BlurOn,tint=MaterialTheme.colorScheme.primary)}}
-        item {SectionCard {SectionTitle("触感与震动"); SettingSwitch("haptics","触感与震动反馈",Icons.Rounded.Vibration,default=true,tint=MaterialTheme.colorScheme.primary)}}
+        }
+        item {AppearanceSection("底部导航") {SettingSwitch("floating","使用悬浮底栏",Icons.Rounded.Dock,default=true,tint=MaterialTheme.colorScheme.primary)}}
+        item {AppearanceSection("显示效果") {SettingSwitch("liquidGlass","使用液态玻璃效果",Icons.Rounded.BlurOn,tint=MaterialTheme.colorScheme.primary)
+            if(site.prefs.getBoolean("liquidGlass",false) && site.prefs.getBoolean("floating",true)) NavigationGlassChoice(site.prefs.getBoolean("translucentNavigationGlass",false), hapticsEnabled = site.prefs.getBoolean("haptics",true)) { site.setting("translucentNavigationGlass",it) }
+        }}
+        item {AppearanceSection("触感与震动") {SettingSwitch("haptics","触感与震动反馈",Icons.Rounded.Vibration,default=true,tint=MaterialTheme.colorScheme.primary)}}
     }
 }
 @Composable fun ReadingPage() {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start=16.dp,top=LocalPageTop.current+12.dp,end=16.dp,bottom=24.dp)) {SectionCard {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start=16.dp,top=LocalPageTop.current+12.dp,end=16.dp,bottom=24.dp)) {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {
         SettingSwitch("autoReplies","自动加载回复",Icons.Outlined.Forum,default=true)
         SettingSwitch("linkify","URL 自动链接",Icons.Rounded.Link,default=true)
         SettingSwitch("showFps","显示 FPS",Icons.Rounded.Speed)
@@ -172,7 +166,7 @@ fun accountOpen(site:Site,nav:Nav,route:String,title:String?=null) {if(title!=nu
         }
         Spacer(Modifier.height(6.dp));Text("Material 3 社区客户端",fontSize=13.sp,color=s.onSurfaceVariant)
         Spacer(Modifier.height(16.dp));Text("基于源论坛的第三方客户端。社区内容与账户权限由原站提供。",fontSize=12.5.sp,lineHeight=16.875.sp,color=s.onSurfaceVariant)
-        Spacer(Modifier.height(14.dp));SectionCard{Row(Modifier.fillMaxWidth().heightIn(min=72.dp).clickable(onClick=tap{nav.route("https://github.com/Chengeeker/Ycoo-Community");close()}).padding(horizontal=16.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Rounded.Code,null,Modifier.size(20.dp),tint=s.primary);Spacer(Modifier.width(16.dp));Column(Modifier.weight(1f)){Text("开源仓库",fontSize=13.sp);Text("github.com/Chengeeker/Ycoo-Community",fontSize=11.sp,color=s.onSurfaceVariant)};Icon(Icons.Rounded.OpenInNew,null,Modifier.size(16.dp),tint=s.primary)}}
+        Spacer(Modifier.height(14.dp));SectionCard(color=s.settingsCardColor(s.surfaceContainerHigh)) {Row(Modifier.fillMaxWidth().heightIn(min=72.dp).clickable(onClick=tap{nav.route("https://github.com/Chengeeker/Ycoo-Community");close()}).padding(horizontal=16.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Rounded.Code,null,Modifier.size(20.dp),tint=s.primary);Spacer(Modifier.width(16.dp));Column(Modifier.weight(1f)){Text("开源仓库",fontSize=13.sp);Text("github.com/Chengeeker/Ycoo-Community",fontSize=11.sp,color=s.onSurfaceVariant)};Icon(Icons.Rounded.OpenInNew,null,Modifier.size(16.dp),tint=s.primary)}}
         Spacer(Modifier.height(16.dp));Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){TextButton(onClick={close();nav.open("licenses")}){Text("开源许可")};Button(onClick=close,shape=RoundedCornerShape(12.dp),contentPadding=PaddingValues(24.dp,10.dp)){Text("我知道了")}}
     }}}
 }
@@ -180,7 +174,7 @@ fun accountOpen(site:Site,nav:Nav,route:String,title:String?=null) {if(title!=nu
     val entries=listOf(ActionEntry("我的消息",Icons.Outlined.Forum,"messages:mypm"),ActionEntry("我的粉丝",Icons.Outlined.People,"web:$ORIGIN/home.php?mod=space&do=follow&view=follower"),
         ActionEntry("我的帖子",Icons.Outlined.Article,"native:$ORIGIN/home.php?mod=space&do=notice&view=mypost"),ActionEntry("坛友互动",Icons.Outlined.Diversity3,"native:$ORIGIN/home.php?mod=space&do=notice&view=interactive"),
         ActionEntry("系统提醒",Icons.Outlined.Notifications,"native:$ORIGIN/home.php?mod=space&do=notice&view=system"),ActionEntry("应用提醒",Icons.Outlined.Apps,"native:$ORIGIN/home.php?mod=space&do=notice&view=userapp"))
-    Column(Modifier.padding(start=16.dp,top=LocalPageTop.current+16.dp,end=16.dp)) {SectionCard {entries.forEach {a-> Preference(a.label,a.icon,tint=MaterialTheme.colorScheme.primary,onClick={accountOpen(site,nav,a.route,a.label)})}}}
+    Column(Modifier.padding(start=16.dp,top=LocalPageTop.current+16.dp,end=16.dp)) {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {entries.forEach {a-> Preference(a.label,a.icon,tint=MaterialTheme.colorScheme.primary,onClick={accountOpen(site,nav,a.route,a.label)})}}}
 }
 @Composable fun ServicesPage(site:Site,nav:Nav) {
     val entries=linkedMapOf("门户原站" to "/portal.php","每日签到" to "/k_misign-sign.html?mobile=2","开心农场" to "/plugin.php?id=jnfarm&mobile=2","心情墙" to "/home.php?mod=space&do=doing&view=all&mobile=2","云盘" to "/plugin.php?id=bphp_clouds:index&mobile=2","淘专辑" to "/forum.php?mod=collection&op=all&mobile=2","圈子" to "/group.php?mod=index&mobile=2","排行榜" to "/misc.php?mod=ranklist&type=member&view=credit&mobile=2","标签" to "/misc.php?mod=tag&mobile=2","访问推广" to "promotion","小黑屋" to "darkroom","当前在线" to "/forum.php?showoldetails=yes&mobile=no#online","电脑版" to "/forum.php?mobile=no","注册与邀请" to "/member.php?mod=register&mobile=2")
@@ -192,8 +186,8 @@ fun accountOpen(site:Site,nav:Nav,route:String,title:String?=null) {if(title!=nu
     if(busy) {Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) {CircularProgressIndicator()}; return}
     LazyColumn(contentPadding=PaddingValues(start=16.dp,top=LocalPageTop.current+16.dp,end=16.dp,bottom=24.dp),verticalArrangement=Arrangement.spacedBy(24.dp)) {
         if(error.isNotEmpty()) item {Failure(error,{site.run {site.syncSession(); error=""}})}
-        item {SectionCard {SiteListItem(headlineContent={Text(if(site.loggedIn)site.username else "尚未登录")},supportingContent=if(site.loggedIn){{Text("UID ${site.uid}")}}else null,contentPadding=PaddingValues(20.dp),modifier=Modifier.clickable(onClick=tap{accountOpen(site,nav,"profile:${site.uid}")}),leadingContent={if(site.loggedIn)SiteAvatar(site.uid,site.username,40.dp)else Box(Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Outlined.Person,null,tint=MaterialTheme.colorScheme.onPrimaryContainer)}},trailingContent={Icon(Icons.Rounded.ChevronRight,null)})}}
-        item {SectionCard {listOf(ActionEntry("我的收藏",Icons.Outlined.BookmarkBorder,"my:myfavthread"),ActionEntry("我的帖子",Icons.Outlined.Article,"my:mythread"),ActionEntry("私信",Icons.Outlined.Mail,"messages:mypm"),ActionEntry("通知",Icons.Outlined.NotificationsNone,"messages:mynotelist")).forEach {a->Preference(a.label,a.icon,onClick={accountOpen(site,nav,a.route,a.label)})}}}
+        item {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {SiteListItem(headlineContent={Text(if(site.loggedIn)site.username else "尚未登录")},supportingContent=if(site.loggedIn){{Text("UID ${site.uid}")}}else null,contentPadding=PaddingValues(20.dp),modifier=Modifier.clickable(onClick=tap{accountOpen(site,nav,"profile:${site.uid}")}),leadingContent={if(site.loggedIn)SiteAvatar(site.uid,site.username,40.dp)else Box(Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer,CircleShape),contentAlignment=Alignment.Center){Icon(Icons.Outlined.Person,null,tint=MaterialTheme.colorScheme.onPrimaryContainer)}},trailingContent={Icon(Icons.Rounded.ChevronRight,null)})}}
+        item {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {listOf(ActionEntry("我的收藏",Icons.Outlined.BookmarkBorder,"my:myfavthread"),ActionEntry("我的帖子",Icons.Outlined.Article,"my:mythread"),ActionEntry("私信",Icons.Outlined.Mail,"messages:mypm"),ActionEntry("通知",Icons.Outlined.NotificationsNone,"messages:mynotelist")).forEach {a->Preference(a.label,a.icon,onClick={accountOpen(site,nav,a.route,a.label)})}}}
         if(site.loggedIn) item {OutlinedButton(onClick={confirm=true},modifier=Modifier.fillMaxWidth()) {Text("退出登录")}}
     }
     if(confirm) OriginalDialog(onDismissRequest={confirm=false},title={Text("退出当前账户？")},text={Text("将清除此应用的登录会话、账户缓存和本机阅读历史。")},confirmButton={Button(onClick={confirm=false;site.run {site.logout()}}) {Text("退出")}},dismissButton={TextButton(onClick={confirm=false}) {Text("取消")}})

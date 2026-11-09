@@ -177,7 +177,7 @@ fun clampGalleryOffset(offset:Offset,scale:Float,viewport:Size,image:Size):Offse
         if(controls>0f&&!session.closing&&!sliding){
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal=16.dp,vertical=10.dp).alpha(controls),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
                 GalleryButton("返回",Icons.Rounded.ArrowBack,onClick=::close)
-                Surface(color=Color.Black.copy(alpha=.45f),shape=RoundedCornerShape(16.dp)){Text("${pager.currentPage+1} / ${session.images.size}",Modifier.padding(14.dp,6.dp),color=Color.White,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)}
+                Surface(color=Color.Black.copy(alpha=.45f),shape=RoundedCornerShape(16.dp)){Text("${pager.currentPage+1} / ${session.images.size}",Modifier.padding(14.dp,6.dp),color=Color.White,fontSize=13.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)}
                 GalleryButton(if(saving)"正在保存"else"保存图片到相册",if(saving)Icons.Rounded.HourglassEmpty else Icons.Rounded.Download,enabled=!saving){if(Build.VERSION.SDK_INT<29&&context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)!=PackageManager.PERMISSION_GRANTED)permission.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)else save()}
             }
         }
@@ -198,6 +198,10 @@ fun clampGalleryOffset(offset:Offset,scale:Float,viewport:Size,image:Size):Offse
 }
 @Composable fun GalleryButton(label:String,icon:androidx.compose.ui.graphics.vector.ImageVector,enabled:Boolean=true,onClick:()->Unit){
     val site=LocalSite.current;site.settingsRevision;val liquid=site.prefs.getBoolean("liquidGlass",false)
+    if (!liquid) {
+        PlainGalleryControl(label, enabled, tap(onClick)) { Icon(icon, null, Modifier.size(24.dp), tint=Color.White.copy(alpha=if(enabled)1f else .38f)) }
+        return
+    }
     var hold by remember{mutableStateOf(false)};var drag by remember{mutableStateOf(Offset.Zero)}
     val displacement by androidx.compose.animation.core.animateOffsetAsState(drag,spring(.8f,400f),label="glass stretch")
     val stretch by animateFloatAsState(if(hold)1+17f/48f else 1f,spring(.8f,400f),label="glass button")
@@ -217,10 +221,6 @@ fun clampGalleryOffset(offset:Offset,scale:Float,viewport:Size,image:Size):Offse
         transformOrigin=TransformOrigin(pivot(d.x),pivot(d.y));translationX=d.x*.15f;translationY=d.y*.15f
     }.then(interaction).semantics{contentDescription=label;role=Role.Button;if(enabled)onClick{action();true}},contentAlignment=Alignment.Center){
         if(liquid)Box(Modifier.fillMaxSize().clip(CircleShape).backdrop(2.dp,GlassStyle(Color(0x66000000),thickness=32f,refractive=1.24f,chromatic=.025f,dark=true)))
-        else Box(Modifier.size(44.dp)
-            .dropShadow(CircleShape,androidx.compose.ui.graphics.shadow.Shadow(radius=7.dp,color=Color.Black.copy(alpha=.2f),offset=DpOffset(0.dp,2.dp)))
-            .dropShadow(CircleShape,androidx.compose.ui.graphics.shadow.Shadow(radius=5.dp,color=Color.White.copy(alpha=.08f),offset=DpOffset(0.dp,(-1).dp)))
-            .clip(CircleShape).backdrop(2.5.dp,GlassStyle(Color.Transparent,gallery=true)).background(Brush.linearGradient(listOf(Color(0xffeeeeee).copy(alpha=.30f),Color(0xff9e9e9e).copy(alpha=.20f),Color(0xff424242).copy(alpha=.36f)))).border(1.dp,Color.White.copy(alpha=.34f),CircleShape))
-        if(liquid)Icon(icon,null,Modifier.size(22.dp),tint=Color.White)else IconButton(onClick=action,enabled=enabled,modifier=Modifier.size(48.dp)){Icon(icon,null,Modifier.size(24.dp),tint=Color.White)}
+        Icon(icon,null,Modifier.size(22.dp),tint=Color.White)
     }
 }

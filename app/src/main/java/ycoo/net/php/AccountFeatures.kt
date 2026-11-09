@@ -35,7 +35,7 @@ fun jsonRows(value:Any?):List<JSONObject> = when(value) {is JSONArray->value.obj
 @Composable fun PromotionPage(site:Site) {
     val url="$ORIGIN/?fromuid=${site.uid}";val clipboard=LocalClipboardManager.current;val context=LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start=24.dp,top=LocalPageTop.current+24.dp,end=24.dp,bottom=24.dp)) {
-        SectionCard {Column(Modifier.fillMaxWidth().padding(24.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+        SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {Column(Modifier.fillMaxWidth().padding(24.dp),horizontalAlignment=Alignment.CenterHorizontally) {
             SiteAvatar(site.uid,site.username,72.dp);Spacer(Modifier.height(12.dp));Text(site.username,style=MaterialTheme.typography.titleLarge);Text("UID ${site.uid}");Spacer(Modifier.height(24.dp));QrCode(url,"推广链接二维码");Spacer(Modifier.height(16.dp));Text("邀请好友扫码访问源社区")
         }}
         Spacer(Modifier.height(16.dp));SelectionContainer {Text(url)};Spacer(Modifier.height(8.dp))
@@ -53,7 +53,7 @@ fun jsonRows(value:Any?):List<JSONObject> = when(value) {is JSONArray->value.obj
             when {label.contains("微信")&&label.contains("绑定")->"微信绑定" to url.toString();label.contains("QQ",true)&&label.contains("绑定")->"QQ绑定" to url.toString();else->null}}.toMap()
     } catch(e:Exception) {if(e is CancellationException)throw e;failed=true} finally {loading=false}}
     LaunchedEffect(Unit) {load()}
-    Column(Modifier.verticalScroll(rememberScrollState()).padding(start=16.dp,top=LocalPageTop.current+16.dp,end=16.dp,bottom=24.dp)) {SectionCard {
+    Column(Modifier.verticalScroll(rememberScrollState()).padding(start=16.dp,top=LocalPageTop.current+16.dp,end=16.dp,bottom=24.dp)) {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {
         listOf(Triple("资料修改",Icons.Outlined.Badge,""),Triple("密码安全",Icons.Outlined.Security,"&op=password"),Triple("认证信息",Icons.Outlined.VerifiedUser,"&op=verify")).forEach {(label,icon,op)->Preference(label,icon,onClick={nav.open("web:$ORIGIN/home.php?mod=spacecp&ac=profile$op")})}
         listOf("微信绑定","QQ绑定").forEach {label->Preference(label,Icons.Rounded.Link,if(bindings.containsKey(label))null else if(loading)"正在读取站点入口" else if(failed)"读取失败，点击重试" else "站点未返回可识别的入口",onClick=if(bindings.containsKey(label)){{nav.open("web:${bindings[label]}")}}else if(failed){{scope.launch {load()}}}else null)}
     }}
@@ -69,8 +69,8 @@ fun jsonRows(value:Any?):List<JSONObject> = when(value) {is JSONArray->value.obj
         if(tab==0) {val v=data
             when {error.isNotEmpty()->Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Failure(error,{scope.launch {load()}})};v==null->Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){CircularProgressIndicator()};else->{val space=v.getJSONObject("space");val currencies=v.optJSONObject("extcredits") ?: JSONObject()
                 LazyColumn(contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                    item {SectionCard {SiteListItem(headlineContent={Text("积分")},supportingContent={Text(space.optString("credits","—"),style=MaterialTheme.typography.headlineMedium)})}}
-                    item {SectionCard {currencies.keys().asSequence().filter {it.toIntOrNull()!=null&&currencies.optJSONObject(it)!=null}.sortedByDescending {it.toInt()}.forEach {id->SiteListItem(headlineContent={Text(currencies.getJSONObject(id).text("title"))},trailingContent={Text(space.optString("extcredits$id","—"))})}}}
+                    item {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {SiteListItem(headlineContent={Text("积分")},supportingContent={Text(space.optString("credits","—"),style=MaterialTheme.typography.headlineMedium)})}}
+                    item {SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {currencies.keys().asSequence().filter {it.toIntOrNull()!=null&&currencies.optJSONObject(it)!=null}.sortedByDescending {it.toInt()}.forEach {id->SiteListItem(headlineContent={Text(currencies.getJSONObject(id).text("title"))},trailingContent={Text(space.optString("extcredits$id","—"))})}}}
                 }
             }}
         } else key(tab) {val url="$ORIGIN/home.php?mod=spacecp&ac=credit&op=${listOf("","transfer","buy","log")[tab]}&mobile=2"
@@ -109,7 +109,7 @@ fun jsonRows(value:Any?):List<JSONObject> = when(value) {is JSONArray->value.obj
     if(rows.isEmpty()&&(busy||error.isNotEmpty())) {Box(Modifier.fillMaxSize().padding(top=LocalPageTop.current),contentAlignment=Alignment.Center){if(busy)CircularProgressIndicator()else Failure(error,{scope.launch{load(true)}})};return}
     LazyColumn(contentPadding=PaddingValues(start=12.dp,top=LocalPageTop.current+12.dp,end=12.dp,bottom=12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         if(rows.isEmpty()&&!busy&&error.isEmpty())item {Text("暂无记录",Modifier.fillMaxWidth(),textAlign=androidx.compose.ui.text.style.TextAlign.Center)}
-        items(rows){r->SectionCard {SiteListItem(modifier=Modifier.clickable(enabled=r.optString("uid").matches(Regex("[1-9]\\d*")),onClick=tap{nav.open("profile:${r.optString("uid")}")}),headlineContent={Text(r.text("username"))},leadingContent={SiteAvatar(r.optString("uid"),r.text("username"))},supportingContent={Text((listOf(r.text("action"),r.text("reason"),r.text("dateline"),"到期：${r.text("groupexpiry")}")).filter {it.isNotEmpty()}.joinToString(" · "))})}}
+        items(rows){r->SectionCard(color=MaterialTheme.colorScheme.settingsCardColor()) {SiteListItem(modifier=Modifier.clickable(enabled=r.optString("uid").matches(Regex("[1-9]\\d*")),onClick=tap{nav.open("profile:${r.optString("uid")}")}),headlineContent={Text(r.text("username"))},leadingContent={SiteAvatar(r.optString("uid"),r.text("username"))},supportingContent={Text((listOf(r.text("action"),r.text("reason"),r.text("dateline"),"到期：${r.text("groupexpiry")}")).filter {it.isNotEmpty()}.joinToString(" · "))})}}
         if(error.isNotEmpty())item {TextButton(onClick={scope.launch{load()}},modifier=Modifier.fillMaxWidth()){Text("$error · 重试")}}else if(more)item {TextButton(onClick={scope.launch{load()}},enabled=!busy,modifier=Modifier.fillMaxWidth()){Text(if(busy)"加载中…"else"加载更多")}}
     }
 }

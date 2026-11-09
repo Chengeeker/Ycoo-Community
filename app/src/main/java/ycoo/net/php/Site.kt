@@ -49,7 +49,7 @@ class Site @JvmOverloads constructor(app: Application,startSession:Boolean=true)
                         is Boolean -> edit.putBoolean(key, value)
                         is Long -> edit.putInt(key, value.toInt())
                         is Int -> edit.putInt(key, value)
-                        is String -> if (key == "textScale") value.removePrefix("VGhpcyBpcyB0aGUgcHJlZml4IGZvciBEb3VibGUu").toFloatOrNull()?.coerceIn(.8f,1.4f)?.let { edit.putFloat(key, it) } else edit.putString(key, value)
+                        is String -> if (key == "textScale") value.removePrefix("VGhpcyBpcyB0aGUgcHJlZml4IGZvciBEb3VibGUu").toFloatOrNull()?.coerceIn(.8f,1.5f)?.let { edit.putFloat(key, it) } else edit.putString(key, value)
                     }
                 }
             }

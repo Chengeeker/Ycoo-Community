@@ -23,7 +23,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.flow.collectLatest
 import org.json.JSONArray
@@ -62,6 +62,7 @@ val paletteSeeds=listOf(0xfffa2f3a,0xffff8200,0xff1976d2,0xff2e7d32,0xff7b1fa2,0
         scheme=scheme.copy(background=if(dark) Color(0xff111215) else scheme.surface)
     }
     if(black) scheme=scheme.copy(background=Color.Black,surface=Color.Black,surfaceContainer=Color(0xff121212),surfaceContainerHigh=Color(0xff181818),surfaceContainerHighest=Color(0xff222222))
+    val weightDelta = if (site.prefs.getBoolean("customFontWeight", false)) site.prefs.getInt("fontWeightDelta", 0).coerceIn(-300, 300) else 0
     val typography=Typography(
         titleLarge=TextStyle(fontSize=22.sp,lineHeight=28.sp,fontWeight=FontWeight.Bold,letterSpacing=0.sp),
         titleMedium=TextStyle(fontSize=16.sp,lineHeight=24.sp,fontWeight=FontWeight.SemiBold,letterSpacing=0.sp),
@@ -72,6 +73,17 @@ val paletteSeeds=listOf(0xfffa2f3a,0xffff8200,0xff1976d2,0xff2e7d32,0xff7b1fa2,0
         labelLarge=TextStyle(fontSize=14.sp,lineHeight=20.sp,fontWeight=FontWeight.SemiBold,letterSpacing=0.sp),
         labelMedium=TextStyle(fontSize=12.sp,lineHeight=16.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp),
         labelSmall=TextStyle(fontSize=11.sp,lineHeight=16.sp,fontWeight=FontWeight.Medium,letterSpacing=0.sp))
+    val platformResolver = LocalFontFamilyResolver.current
+    val configuration = LocalConfiguration.current
+    val customWeight = site.prefs.getBoolean("customFontWeight", false)
+    val resolver = remember(context, configuration, platformResolver, customWeight, weightDelta) {
+        if (!customWeight) platformResolver else {
+            val neutral = android.content.res.Configuration(configuration).apply {
+                if (Build.VERSION.SDK_INT >= 31) fontWeightAdjustment = 0
+            }
+            createFontFamilyResolver(context.createConfigurationContext(neutral))
+        }
+    }
     val density=LocalDensity.current
     val textScale=site.prefs.getFloat("textScale",1f)
     val appDensity=remember(density,textScale) {object:Density by density {
@@ -82,6 +94,8 @@ val paletteSeeds=listOf(0xfffa2f3a,0xffff8200,0xff1976d2,0xff2e7d32,0xff7b1fa2,0
     CompositionLocalProvider(LocalSite provides site,LocalDark provides dark,LocalCardColor provides (if(dark) Color(if(black)0xff121212 else 0xff1b1c20) else scheme.surfaceContainerLowest),
         LocalHeaderColor provides (if(dark) Color(if(black)0xff000000 else 0xff111215) else scheme.surface),
         LocalDensity provides appDensity,
+        LocalFontFamilyResolver provides resolver,
+        LocalAppWeightDelta provides weightDelta,
         LocalRippleConfiguration provides null,LocalIndication provides NoPressIndication) {
         MaterialTheme(colorScheme=scheme,typography=typography) {
             CompositionLocalProvider(LocalContentColor provides scheme.onSurface) { ProvideTextStyle(typography.bodyMedium,content) }
@@ -99,9 +113,9 @@ private object NoPressIndication:IndicationNodeFactory {
     val site=LocalSite.current; val haptic=LocalHapticFeedback.current
     return {if(site.prefs.getBoolean("haptics",true)) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); action()}
 }
-@Composable fun SectionCard(modifier:Modifier=Modifier,content:@Composable ColumnScope.()->Unit) {
+@Composable fun SectionCard(modifier:Modifier=Modifier,color:Color=Color.Unspecified,content:@Composable ColumnScope.()->Unit) {
     val s=MaterialTheme.colorScheme
-    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=if(s.surface==Color.Black) s.surfaceContainer else s.surfaceContainerLow) {Column(content=content)}
+    Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=if(color!=Color.Unspecified) color else if(s.surface==Color.Black) s.surfaceContainer else s.surfaceContainerLow) {Column(content=content)}
 }
 @Composable fun OriginalFab(onClick:()->Unit,modifier:Modifier=Modifier,content:@Composable ()->Unit) {
     FloatingActionButton(onClick=tap(onClick),modifier=modifier,shape=RoundedCornerShape(20.dp),
@@ -155,7 +169,7 @@ private object NoPressIndication:IndicationNodeFactory {
     val interaction=remember {MutableInteractionSource()}
     val scheme=MaterialTheme.colorScheme
     androidx.compose.foundation.text.BasicTextField(value,onValueChange,modifier.fillMaxWidth().defaultMinSize(minHeight=56.dp),enabled,readOnly,
-        textStyle=MaterialTheme.typography.bodyLarge.copy(color=scheme.onSurface.copy(alpha=if(enabled)1f else .38f)),
+        textStyle=appWeightStyle(MaterialTheme.typography.bodyLarge).copy(color=scheme.onSurface.copy(alpha=if(enabled)1f else .38f)),
         keyboardOptions=keyboardOptions,keyboardActions=keyboardActions,singleLine=singleLine,minLines=minLines,maxLines=maxLines,
         visualTransformation=visualTransformation,interactionSource=interaction,cursorBrush=SolidColor(if(isError)scheme.error else scheme.primary),
         decorationBox={inner->TextFieldDefaults.DecorationBox(value,inner,enabled,singleLine,visualTransformation,interaction,
@@ -175,7 +189,7 @@ private object NoPressIndication:IndicationNodeFactory {
     val interaction=remember {MutableInteractionSource()}
     val scheme=MaterialTheme.colorScheme
     androidx.compose.foundation.text.BasicTextField(value,onValueChange,modifier.fillMaxWidth().defaultMinSize(minHeight=56.dp),enabled=enabled,
-        textStyle=MaterialTheme.typography.bodyLarge.copy(color=scheme.onSurface.copy(alpha=if(enabled)1f else .38f)),minLines=minLines,
+        textStyle=appWeightStyle(MaterialTheme.typography.bodyLarge).copy(color=scheme.onSurface.copy(alpha=if(enabled)1f else .38f)),minLines=minLines,
         interactionSource=interaction,cursorBrush=SolidColor(scheme.primary),
         decorationBox={inner->TextFieldDefaults.DecorationBox(value.text,inner,enabled,false,androidx.compose.ui.text.input.VisualTransformation.None,interaction,
             label=label,placeholder=placeholder,shape=RectangleShape,colors=colors,contentPadding=PaddingValues(start=0.dp,end=0.dp,top=if(label==null)8.dp else 16.dp,bottom=8.dp))})
@@ -300,7 +314,7 @@ fun glassDragFraction(x:Float,width:Float):Float {
         val width=minOf(440.dp,(maxWidth-40.dp).coerceAtLeast(40.dp))*8/9
         val bottom=if(inset>0.dp)6.dp else 14.dp
         val scene = LocalBackdrop.current
-        if (glass && !glassGpuFailed && scene != null && Build.VERSION.SDK_INT >= 33) {
+        if (glass && !glassGpuFailed && scene != null) {
             RedNoteGlassNavigation(
                 scene, width, labels, icons, active, selected, onSelected, Modifier.padding(bottom = bottom),
                 onFailure = { glassGpuFailed = true },

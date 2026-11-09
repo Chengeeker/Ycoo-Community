@@ -91,7 +91,7 @@ class LayoutTest {
         activity.setContent { OriginalTheme(site) { AppearancePage(site) } }
         rule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("经典红"))
         rule.onNodeWithText("经典红").assertIsDisplayed()
-        rule.onNodeWithText("动态取色").assertDoesNotExist()
+        rule.onNodeWithText("动态取色").assertIsNotEnabled()
     }
     @Test fun darkThemeAndLargeTypeCanRenderWithoutClippingControls(){
         val site=site(true);site.setting("textScale",1.4f)
