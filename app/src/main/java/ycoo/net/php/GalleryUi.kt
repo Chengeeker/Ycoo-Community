@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -199,7 +200,7 @@ fun clampGalleryOffset(offset:Offset,scale:Float,viewport:Size,image:Size):Offse
 @Composable fun GalleryButton(label:String,icon:androidx.compose.ui.graphics.vector.ImageVector,enabled:Boolean=true,onClick:()->Unit){
     val site=LocalSite.current;site.settingsRevision;val liquid=site.prefs.getBoolean("liquidGlass",false)
     if (!liquid) {
-        PlainGalleryControl(label, enabled, tap(onClick)) { Icon(icon, null, Modifier.size(24.dp), tint=Color.White.copy(alpha=if(enabled)1f else .38f)) }
+        PlainGalleryControl(label, enabled, tap(onClick)) { Icon(if (label == "返回") Icons.AutoMirrored.Outlined.ArrowBack else icon, null, Modifier.size(22.dp), tint=Color.White.copy(alpha=if(enabled)1f else .38f)) }
         return
     }
     var hold by remember{mutableStateOf(false)};var drag by remember{mutableStateOf(Offset.Zero)}
