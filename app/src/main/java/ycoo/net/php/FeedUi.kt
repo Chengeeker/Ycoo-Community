@@ -94,11 +94,18 @@ import org.json.JSONObject
             }
             if(topic.preview.isNotEmpty()) Text(topic.preview,Modifier.padding(top=4.dp),maxLines=3,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium,color=s.onSurfaceVariant)
             if(topic.images.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp));Row(Modifier.fillMaxWidth().height(if(topic.images.size==1)220.dp else 190.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                    TopicThumbnail(site,topic,0,Modifier.weight(if(topic.images.size>=3)2f else 1f).fillMaxHeight().onGloballyPositioned{origins[0]=androidx.compose.ui.geometry.Rect(it.positionInRoot(),androidx.compose.ui.geometry.Size(it.size.width.toFloat(),it.size.height.toFloat()))},onSource={previews[0]=it},imageModifier=Modifier.gallerySource(nav,gallerySource,0),onDecoded={decoded[0]=it}) {openImage(0)}
-                    if(topic.images.size>1) Column(Modifier.weight(1f).fillMaxHeight(),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                        TopicThumbnail(site,topic,1,Modifier.weight(1f).fillMaxWidth().onGloballyPositioned{origins[1]=androidx.compose.ui.geometry.Rect(it.positionInRoot(),androidx.compose.ui.geometry.Size(it.size.width.toFloat(),it.size.height.toFloat()))},onSource={previews[1]=it},imageModifier=Modifier.gallerySource(nav,gallerySource,1),onDecoded={decoded[1]=it}) {openImage(1)}
-                        if(topic.images.size>2) TopicThumbnail(site,topic,2,Modifier.weight(1f).fillMaxWidth().onGloballyPositioned{origins[2]=androidx.compose.ui.geometry.Rect(it.positionInRoot(),androidx.compose.ui.geometry.Size(it.size.width.toFloat(),it.size.height.toFloat()))},onSource={previews[2]=it},imageModifier=Modifier.gallerySource(nav,gallerySource,2),onDecoded={decoded[2]=it}) {openImage(2)}
+                Spacer(Modifier.height(12.dp))
+                val visible=topic.images.size.coerceAtMost(9)
+                val columns=when(visible){1->1;2,4->2;else->3}
+                Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                    (0 until visible).toList().chunked(columns).forEach { row ->
+                        Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                            row.forEach { index ->
+                                val cell=if(columns==1) Modifier.width(260.dp).aspectRatio(1f) else Modifier.weight(1f).aspectRatio(1f)
+                                TopicThumbnail(site,topic,index,cell.onGloballyPositioned{origins[index]=androidx.compose.ui.geometry.Rect(it.positionInRoot(),androidx.compose.ui.geometry.Size(it.size.width.toFloat(),it.size.height.toFloat()))},onSource={previews[index]=it},imageModifier=Modifier.gallerySource(nav,gallerySource,index),onDecoded={decoded[index]=it}) {openImage(index)}
+                            }
+                            repeat(columns-row.size){Spacer(Modifier.weight(1f))}
+                        }
                     }
                 }
             }
@@ -120,11 +127,11 @@ import org.json.JSONObject
         key(source,revision) {SiteImage(source,"帖子图片",Modifier.fillMaxSize().then(imageModifier),onSuccess={(it as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let{bitmap->onDecoded(bitmap.asImageBitmap())}},onError={e->
             val status=(e as? coil.network.HttpException)?.response?.code
             val aid=thumbnailAid(source)
-            if(!tried && aid!=null && status in listOf(403,404,410)) {tried=true;repairing=true;scope.launch {try{val original=site.originals(topic.id)[aid];if(original!=null&&original!=source){source=original;onSource(original)}else failed=true}catch(e:Exception){if(e is CancellationException)throw e;failed=true}finally{repairing=false}}} else failed=true
+            if(!tried && aid!=null && (status==null || status in listOf(403,404,410))) {tried=true;repairing=true;scope.launch {try{val original=site.originals(topic.id)[aid];if(original!=null&&original!=source){source=original;onSource(original)}else failed=true}catch(e:Exception){if(e is CancellationException)throw e;failed=true}finally{repairing=false}}} else failed=true
         })}
         if(repairing)CircularProgressIndicator()
         else if(failed) Icon(Icons.Rounded.Refresh,"图片加载失败，点击重试")
-        if(index==2&&topic.images.size>3)Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.45f)),contentAlignment=Alignment.Center){Text("+${topic.images.size-3}",color=Color.White,fontSize=24.sp)}
+        if(index==8&&topic.images.size>9)Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.45f)),contentAlignment=Alignment.Center){Text("+${topic.images.size-9}",color=Color.White,fontSize=24.sp)}
     }
 }
 

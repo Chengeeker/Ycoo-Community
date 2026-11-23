@@ -164,7 +164,7 @@ fun accountOpen(site:Site,nav:Nav,route:String,title:String?=null) {if(title!=nu
             Text("源社区",fontSize=21.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold,letterSpacing=.2.sp)
             Surface(shape=RoundedCornerShape(8.dp),color=s.primaryContainer){Text("v${BuildConfig.VERSION_NAME}",Modifier.padding(8.dp,2.5.dp),fontSize=12.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold,color=s.onPrimaryContainer)}
         }
-        Spacer(Modifier.height(6.dp));Text("Material 3 社区客户端",fontSize=13.sp,color=s.onSurfaceVariant)
+        Spacer(Modifier.height(6.dp));Text("简洁的社区客户端",fontSize=13.sp,color=s.onSurfaceVariant)
         Spacer(Modifier.height(16.dp));Text("基于源论坛的第三方客户端。社区内容与账户权限由原站提供。",fontSize=12.5.sp,lineHeight=16.875.sp,color=s.onSurfaceVariant)
         Spacer(Modifier.height(14.dp));SectionCard(color=s.settingsCardColor(s.surfaceContainerHigh)) {Row(Modifier.fillMaxWidth().heightIn(min=72.dp).clickable(onClick=tap{nav.route("https://github.com/Chengeeker/Ycoo-Community");close()}).padding(horizontal=16.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Rounded.Code,null,Modifier.size(20.dp),tint=s.primary);Spacer(Modifier.width(16.dp));Column(Modifier.weight(1f)){Text("开源仓库",fontSize=13.sp);Text("github.com/Chengeeker/Ycoo-Community",fontSize=11.sp,color=s.onSurfaceVariant)};Icon(Icons.Rounded.OpenInNew,null,Modifier.size(16.dp),tint=s.primary)}}
         Spacer(Modifier.height(16.dp));Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically){TextButton(onClick={close();nav.open("licenses")}){Text("开源许可")};Button(onClick=close,shape=RoundedCornerShape(12.dp),contentPadding=PaddingValues(24.dp,10.dp)){Text("我知道了")}}

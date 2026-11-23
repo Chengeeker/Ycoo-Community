@@ -1,8 +1,8 @@
 param(
     [string]$Apk = (Join-Path $PSScriptRoot '../app/build/outputs/apk/release/app-release.apk'),
     [string]$BuildTools = (Join-Path $env:LOCALAPPDATA 'Android/sdk/build-tools/37.0.0'),
-    [string]$VersionName = '2.0.3',
-    [int]$VersionCode = 86
+    [string]$VersionName = '2.0.10',
+    [int]$VersionCode = 93
 )
 $ErrorActionPreference = 'Stop'
 $Apk = (Resolve-Path -LiteralPath $Apk).Path

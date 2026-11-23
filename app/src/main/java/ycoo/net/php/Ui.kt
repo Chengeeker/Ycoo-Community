@@ -109,9 +109,10 @@ private object NoPressIndication:IndicationNodeFactory {
     override fun equals(other:Any?)=other===this
     override fun hashCode()=javaClass.hashCode()
 }
-@Composable fun tap(action:()->Unit):()->Unit {
+@Composable fun tap(action:()->Unit):()->Unit = tap(action, HapticFeedbackType.TextHandleMove)
+@Composable fun tap(action:()->Unit, type: HapticFeedbackType):()->Unit {
     val site=LocalSite.current; val haptic=LocalHapticFeedback.current
-    return {if(site.prefs.getBoolean("haptics",true)) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); action()}
+    return {if(site.prefs.getBoolean("haptics",true)) haptic.performHapticFeedback(type); action()}
 }
 @Composable fun SectionCard(modifier:Modifier=Modifier,color:Color=Color.Unspecified,content:@Composable ColumnScope.()->Unit) {
     val s=MaterialTheme.colorScheme

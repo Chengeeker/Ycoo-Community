@@ -15,8 +15,8 @@ android {
         applicationId = "ycoo.net.php"
         minSdk = 24
         targetSdk = 36
-        versionCode = 87
-        versionName = "2.0.4"
+        versionCode = 93
+        versionName = "2.0.10"
         ndk { abiFilters += "arm64-v8a" }
     }
     signingConfigs {

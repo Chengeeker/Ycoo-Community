@@ -9,7 +9,16 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollScope
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.calculateTargetValue
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
@@ -98,6 +107,7 @@ fun clampGalleryOffset(offset:Offset,scale:Float,viewport:Size,image:Size):Offse
     val controls by animateFloatAsState(if(chrome&&!sliding&&!session.closing&&!session.flying)1f else 0f,tween(140),label="gallery controls")
     CompositionLocalProvider(LocalBackdrop provides backdrop){BoxWithConstraints(Modifier.fillMaxSize()) {
         val full=Rect(0f,0f,constraints.maxWidth.toFloat(),constraints.maxHeight.toFloat())
+        val galleryTick=tap({},androidx.compose.ui.hapticfeedback.HapticFeedbackType.KeyboardTap)
         val origin=session.origins[pager.currentPage] ?: full
         val hasHero=session.origins.containsKey(pager.currentPage)
         fun frame():GalleryFlightFrame? {
@@ -138,14 +148,14 @@ fun clampGalleryOffset(offset:Offset,scale:Float,viewport:Size,image:Size):Offse
             HorizontalPager(pager,Modifier.fillMaxSize().graphicsLayer{
                 alpha=if(hasHero&&session.flying)0f else if(session.closing)returning.value else progress.value
                 translationX=slide;val shrink=(1-abs(slide)/(full.width/2)).coerceAtLeast(.8f);scaleX=shrink;scaleY=shrink
-            },userScrollEnabled=!zoomed&&!session.flying,beyondViewportPageCount=0) {index->
+            },userScrollEnabled=!zoomed&&!session.flying,beyondViewportPageCount=1) {index->
                 key(index){var scale by remember{mutableFloatStateOf(1f)};var offset by remember{mutableStateOf(Offset.Zero)};var dimensions by remember{mutableStateOf(Size.Zero)};var loaded by remember{mutableStateOf(false)};var failed by remember{mutableStateOf(false)};var retry by remember{mutableIntStateOf(0)};var animation by remember{mutableStateOf<Job?>(null)}
                     val transformState=rememberTransformableState{zoom,pan,_->animation?.cancel();scale=(scale*zoom).coerceIn(1f,8f);offset=clampGalleryOffset(offset+pan,scale,full.size,dimensions)}
                     val pageScale=scale;val pageOffset=offset
                     SideEffect{if(index==pager.currentPage){zoomed=pageScale>1.01f;currentScale=pageScale;currentOffset=pageOffset;session.current=index}}
                     val gestures=if(session.flying)Modifier else Modifier.transformable(transformState,canPan={scale>1.01f}).pointerInput(session,index){detectTapGestures(
                         onTap={point->if(point.x>=size.width/3f&&point.x<size.width*2/3f)chrome=!chrome else close()},
-                        onDoubleTap={point->val target=nextGalleryZoom(scale,dimensions.height/dimensions.width.coerceAtLeast(1f)>2);val begin=scale;val start=offset;animation?.cancel();animation=scope.launch{animate(begin,target,animationSpec=tween(260,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){value,_->scale=value;offset=clampGalleryOffset(start*value/begin+(Offset(size.width/2f,size.height/2f)-point)*(value/begin-1),value,full.size,dimensions)}}}
+                        onDoubleTap={point->galleryTick();val target=nextGalleryZoom(scale,dimensions.height/dimensions.width.coerceAtLeast(1f)>2);val begin=scale;val start=offset;animation?.cancel();animation=scope.launch{animate(begin,target,animationSpec=tween(260,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){value,_->scale=value;offset=clampGalleryOffset(start*value/begin+(Offset(size.width/2f,size.height/2f)-point)*(value/begin-1),value,full.size,dimensions)}}}
                     )}
                     Box(Modifier.fillMaxSize().then(gestures),contentAlignment=Alignment.Center){
                         val imageModifier=Modifier.fillMaxSize().graphicsLayer{scaleX=scale;scaleY=scale;translationX=offset.x;translationY=offset.y}
@@ -183,17 +193,67 @@ fun clampGalleryOffset(offset:Offset,scale:Float,viewport:Size,image:Size):Offse
             }
         }
         if(session.images.size>1&&controls>0f&&!session.closing&&!sliding){
-            val thumbs=rememberPagerState(initialPage=session.initial.coerceIn(session.images.indices),pageCount={session.images.size})
+            val thumbs=rememberLazyListState(pager.currentPage)
             val dragged by thumbs.interactionSource.collectIsDraggedAsState()
-            LaunchedEffect(pager.settledPage){if(!dragged)thumbs.animateScrollToPage(pager.settledPage,animationSpec=tween(120))}
-            LaunchedEffect(thumbs,dragged){if(dragged)snapshotFlow{thumbs.currentPage to thumbs.currentPageOffsetFraction}.collect{(page,fraction)->pager.scrollToPage(page,fraction)}}
-            LaunchedEffect(dragged){if(!dragged&&thumbs.currentPage!=pager.currentPage)pager.animateScrollToPage(thumbs.currentPage,animationSpec=tween(120))}
-            HorizontalPager(thumbs,Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom=32.dp).height(64.dp).fillMaxWidth().alpha(controls),pageSize=PageSize.Fixed(maxWidth*.16f),contentPadding=PaddingValues(horizontal=maxWidth*.42f),flingBehavior=PagerDefaults.flingBehavior(thumbs)) {i->
-                Box(Modifier.fillMaxSize().padding(horizontal=3.dp,vertical=2.dp).semantics{selected=i==pager.currentPage;contentDescription="第 ${i+1} 张图片";role=Role.Button}.clip(RoundedCornerShape(8.dp)).border(2.dp,if(i==pager.currentPage)Color.White else Color.Transparent,RoundedCornerShape(8.dp)).clickable(onClick=tap{scope.launch{pager.scrollToPage(i);thumbs.animateScrollToPage(i,animationSpec=tween(120))}}).padding(2.dp)){
+            val mainDragged by pager.interactionSource.collectIsDraggedAsState()
+            var thumbOwns by remember { mutableStateOf(false) }
+            val density=LocalDensity.current
+            val cell=maxWidth*.16f
+            val cellPixels=with(density){cell.toPx()}
+        val decay = rememberSplineBasedDecay<Float>()
+        var dragDirection by remember { mutableFloatStateOf(0f) }
+        LaunchedEffect(dragged) {
+            if (dragged) {
+                dragDirection = 0f
+                var previous: Float? = null
+                snapshotFlow { thumbs.firstVisibleItemIndex * cellPixels + thumbs.firstVisibleItemScrollOffset }
+                    .collect { position ->
+                        previous?.let { if (abs(position - it) > .1f) dragDirection = (position - it).sign }
+                        previous = position
+                    }
+            }
+        }
+        val direction by rememberUpdatedState(dragDirection)
+        val fling = remember(thumbs, cellPixels, session.images.size, decay) {
+            object : FlingBehavior {
+                override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
+                    val layout = thumbs.layoutInfo
+                    val center = (layout.viewportStartOffset + layout.viewportEndOffset) / 2f
+                    val item = layout.visibleItemsInfo.minByOrNull { abs(it.offset + it.size / 2f - center) } ?: return initialVelocity
+                    val position = (item.index + (center - item.offset - item.size / 2f) / cellPixels).coerceIn(0f, session.images.lastIndex.toFloat())
+                    val projected = (position + decay.calculateTargetValue(0f, initialVelocity) / cellPixels).coerceIn(0f, session.images.lastIndex.toFloat())
+                    val motion = if (abs(initialVelocity) > 1f) initialVelocity.sign else direction
+                    val target = when { motion > 0f -> ceil(projected); motion < 0f -> floor(projected); else -> projected.roundToInt().toFloat() }.coerceIn(0f, session.images.lastIndex.toFloat())
+                    val distance = (target - position) * cellPixels
+                    if (abs(distance) < .5f) return 0f
+                    val duration = (abs(distance) / abs(initialVelocity).coerceAtLeast(cellPixels * 2f) * 2000f).roundToInt().coerceIn(180, 700)
+                    var consumed = 0f
+                    animate(0f, distance, animationSpec = tween(duration, easing = LinearOutSlowInEasing)) { value, _ ->
+                        consumed += scrollBy(value - consumed)
+                    }
+                    return 0f
+                }
+            }
+        }
+            LaunchedEffect(dragged,mainDragged){if(dragged){thumbOwns=true;pager.stopScroll()}else if(mainDragged){thumbOwns=false;thumbs.stopScroll()}}
+            LaunchedEffect(thumbOwns,cellPixels){
+                if(!thumbOwns){snapshotFlow{pager.currentPage to pager.currentPageOffsetFraction}.collect{(page,fraction)->thumbs.requestScrollToItem(page,(fraction*cellPixels).roundToInt())}}
+                else {
+                    var previousPage=-1;var lastTick=0L
+                    snapshotFlow{val layout=thumbs.layoutInfo;val center=(layout.viewportStartOffset+layout.viewportEndOffset)/2f;layout.visibleItemsInfo.minByOrNull{abs(it.offset+it.size/2f-center)}?.let{it.index+(center-it.offset-it.size/2f)/cellPixels}}.collect{raw->
+                        if(raw!=null){val position=raw.coerceIn(0f,session.images.lastIndex.toFloat());val page=position.roundToInt();val fraction=position-page
+                            if(page!=previousPage){val now=android.os.SystemClock.uptimeMillis();if(now-lastTick>=12L){galleryTick();lastTick=now};previousPage=page}
+                            if(pager.currentPage!=page||abs(pager.currentPageOffsetFraction-fraction)>.001f)pager.requestScrollToPage(page,fraction)
+                        }
+                    }
+                }
+            }
+            LazyRow(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom=32.dp).height(64.dp).fillMaxWidth().alpha(controls),state=thumbs,contentPadding=PaddingValues(horizontal=(maxWidth-cell)/2),flingBehavior=fling,overscrollEffect=null) { items(session.images.size){i->
+                Box(Modifier.width(cell).fillMaxHeight().padding(horizontal=3.dp,vertical=2.dp).semantics{selected=i==pager.currentPage;contentDescription="第 ${i+1} 张图片";role=Role.Button}.clip(RoundedCornerShape(8.dp)).border(2.dp,if(i==pager.currentPage)Color.White else Color.Transparent,RoundedCornerShape(8.dp)).clickable(onClick=tap({thumbOwns=false;scope.launch{pager.scrollToPage(i)}},androidx.compose.ui.hapticfeedback.HapticFeedbackType.KeyboardTap)).padding(2.dp)){
                     SiteImage(session.previews.getOrElse(i){session.images[i]},null,Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)))
                     if(i!=pager.currentPage)Box(Modifier.fillMaxSize().background(Color.White.copy(alpha=.5f)))
                 }
-            }
+            }}
         }
     }}
 }

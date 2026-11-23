@@ -1,6 +1,6 @@
 # 源社区
 
-源论坛 Android 客户端。使用 Kotlin、Jetpack Compose 和 Material 3。应用包名为 `ycoo.net.php`，当前版本为 `2.0.3+86`。
+源论坛 Android 客户端。使用 Kotlin、Jetpack Compose 和 Material 3。应用包名为 `ycoo.net.php`，当前版本为 `2.0.10+93`。
 
 ## 开发与打包
 
